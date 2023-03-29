@@ -1,5 +1,4 @@
 import { useContext } from "react";
-import UserInfo from "../components/userInfo";
 import AuthContext from "../context/AuthContext";
 
 import Box from '@mui/material/Box';
@@ -36,6 +35,9 @@ export default function Home() {
   useEffect(() => {
     const username = user.sub
     socket.emit('get_player', username, (player) => {
+      if (player.in_room) {
+        return history.push("/game_room");
+      }
       setPlayer(player)
     })
     socket.on('playerJoined', (data) => {
@@ -66,13 +68,110 @@ export default function Home() {
       }
     });
 
-    if (!user.joined) {
-      return history.push("/");
-    }
+    socket.on('gameRequest', (data) => {
+      localStorage.setItem('hanging_response', data.username_x)
+      let game_type 
+      if (data.game_type === 0){
+        game_type = "TicTacToe"
+      }else if (data.game_type === 1){
+        game_type = "Rock Paper Scissor"
 
-    if (user.in_room) {
-      return history.push("/tictactoe");
-    }
+      }
+      confirmAlert({
+        title: `Confirm ${game_type} game request`,
+        message: `${data.username_x} Requesting a ${game_type} game `,
+        buttons: [
+          {
+            label: 'Yes',
+            onClick: () => {
+              localStorage.removeItem('hanging_response');
+              socket.emit('join_room', data.username_x, data.username_o, data.game_type, data.role);
+              history.push('/game_room')
+            }
+          },
+          {
+            label: 'No',
+            onClick: () => {
+              localStorage.removeItem('hanging_response');
+              socket.emit('decline_request', data.username_x);
+            }
+          }
+        ],
+        onClickOutside: () => {
+          localStorage.removeItem('hanging_response');
+          socket.emit('decline_request', data.username_x);
+        },
+      });
+    });
+
+
+    socket.on('requestDeclined', () => {
+      localStorage.removeItem('hanging_request');
+      confirmAlert({
+        title: 'Declined game request',
+        message: `Game request declined`,
+        buttons: [
+          {
+            label: 'Ok',
+            onClick: () => {
+            }
+          }
+        ]
+      });
+    });
+
+
+    socket.on('requestCanceled', () => {
+      localStorage.removeItem('hanging_response');
+      confirmAlert({
+        title: 'Game Canceled',
+        message: `The Request Canceled`,
+        buttons: [
+          {
+            label: 'Ok',
+            onClick: () => {
+            }
+          }
+        ]
+      });
+    });
+
+
+    socket.on('setPlayerToPlay', (data) => {
+      localStorage.removeItem('hanging_request');
+      const player_x = data.player
+      const player_o = data.opponent
+      socket.emit('set_timer', player_x.room_number, player_x.username, player_o)
+      confirmAlert({
+        title: 'Accepted game request',
+        message: `your turn as X your time to play`,
+        buttons: [
+          {
+            label: 'Ok',
+            onClick: () => {
+            }
+          }
+        ],
+      });
+    });
+
+
+    socket.on('cofirmAccepted',  (gameType)  => {
+      localStorage.removeItem('hanging_request');
+      history.push('/game_room')
+      confirmAlert({
+        title: `Accepted ${gameType} game request`,
+        message: `your opponent has accepted the request you can play now`,
+        buttons: [
+          {
+            label: 'Ok',
+            onClick: () => {
+            }
+          }
+        ],
+      });
+    });
+
 
     const hangingRequestPlayer = localStorage.getItem('hanging_request');
     if (hangingRequestPlayer) {
@@ -88,7 +187,6 @@ export default function Home() {
 
   }, []);
 
-  console.log("player", player)
   return (
     <div>
       <Header/>

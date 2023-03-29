@@ -40,9 +40,9 @@ def player_helper(player):
     return player
 
 
-async def get_joined_players():
+async def get_connected_players():
     players_list = []
-    players = users_collection.find({"joined" : True})
+    players = users_collection.find({"connected" : True})
     async for player in players:
         player_name = player['username'] 
         if not player['in_room']:
@@ -57,3 +57,44 @@ async def get_chat_messages():
         message.pop('_id')
         messages.append(message)
     return messages
+
+
+async def retrieve_rules():
+    rules = []
+    async for rule in rule_collection.find():
+        rules.append(rule["winning_number"])
+    return rules
+
+
+async def start_rock_paper_scissor_game():
+    pass
+
+
+
+async def countdown_x(player_name, room_number, opponent_name):
+    x_time , x_turn, player_won = get_timer_data(room_number, "x_time")
+    while x_turn and x_time >= 0 and not player_won:
+        await sio_server.sleep(1)
+        player_x = users_collection.find_one({'username': player_name})
+        player_o = users_collection.find_one({'username': opponent_name})
+        mins, secs = divmod(x_time, 60)
+        timer = '{:02d}:{:02d}'.format(mins, secs)
+        await sio_server.emit('setTimer', timer, to=player_x['sid'])
+        x_time -= 1
+        if x_time == -1:
+            await sio_server.emit('TimeOut', to=room_number)
+            # await declare_winner_back(player_o['sid'], player_o, player_x['username'])
+            # await stop_time_back(room)
+        x_turn, player_won = get_timer_data(room_number)
+
+
+def get_timer_data(room_number, x_o_time=None):
+    room = rooms_collection.find_one({'room_number': room_number})
+    timer_switch = room["timer_switch"]
+    x_turn = timer_switch.get("x_turn")
+    player_won = timer_switch.get("player_won")
+    if x_o_time:
+        time = timer_switch.get(x_o_time)
+        return time, x_turn, player_won
+    return x_turn, player_won
+    

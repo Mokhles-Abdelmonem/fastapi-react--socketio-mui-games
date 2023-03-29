@@ -14,7 +14,6 @@ export const AuthProvider = ({ children }) => {
   const Token = localStorage.getItem("authTokens")
   const verifyToken = async () => {
     const access_token = JSON.parse(Token).access_token
-    console.log(access_token);
     const response = await fetch("http://127.0.0.1:8000/auth/verify/", {
       method: "POST",
       headers: {
@@ -27,19 +26,14 @@ export const AuthProvider = ({ children }) => {
     });
     const data = await response.json();
     if (response.status === 200) {
-      console.log(data);
+      
     } else {
-      refreshToken().then((res) => {
-        if (res){
-          console.log("res from auth provider verify not found and refresh token set", res);
-        }
-      });
+      refreshToken();
     }
   };
 
   const refreshToken = async () => {
     const refresh_token = JSON.parse(Token).refresh_token
-    console.log("refresh token from auth provider", refresh_token)
     const res = await fetch(`${API_URL}/auth/refresh/`, {
       method: 'POST',
       headers: {
@@ -65,15 +59,6 @@ export const AuthProvider = ({ children }) => {
   }
 
 
-
-
-
-  const socket = io(process.env.REACT_APP_API_URL, {
-    path: process.env.REACT_APP_SOCKET_PATH,
-    auth: (cb) => {
-      cb(Token ? Token.access_token : null);
-    },
-  });
   const [authTokens, setAuthTokens] = useState(() =>
       Token
       ? JSON.parse(Token)
@@ -85,7 +70,12 @@ export const AuthProvider = ({ children }) => {
       : null
   );
 
-
+  const socket = io(process.env.REACT_APP_API_URL, {
+    path: process.env.REACT_APP_SOCKET_PATH,
+    auth: (cb) => {
+      cb(authTokens ? authTokens.access_token : null);
+    },
+  });
 
   const [loading, setLoading] = useState(true);
 

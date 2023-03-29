@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useHistory } from "react-router-dom";
-import { useDispatch, useSelector } from 'react-redux';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -13,12 +12,14 @@ import TextField from '@mui/material/TextField';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import SendIcon from '@mui/icons-material/Send';
 import { Message } from "./Message";
+import AuthContext from '../../context/AuthContext';
 
 
-export default function Chat({socket, level}) {
+export default function Chat({level}) {
   const [messages, setMessages] = useState([]);
-  const user = useSelector(state => state.auth.user);
   const [message, setMessage] = useState('');
+  const { user, socket } = useContext(AuthContext);
+  const username = user.sub
 
 
   useEffect(() => {

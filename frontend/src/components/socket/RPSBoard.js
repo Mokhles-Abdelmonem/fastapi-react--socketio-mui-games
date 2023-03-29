@@ -1,5 +1,4 @@
 import Square from "./Square";
-
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import ContentCutIcon from '@mui/icons-material/ContentCut';
 import CircleIcon from '@mui/icons-material/Circle';

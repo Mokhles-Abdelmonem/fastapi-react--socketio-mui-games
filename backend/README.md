@@ -1,1 +1,1 @@
-# fastapi-boilerplate-SQL
+# fastapi-boilerplate-mongo

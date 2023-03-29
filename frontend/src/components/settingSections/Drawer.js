@@ -6,7 +6,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import { useEffect } from 'react';
-import { confirmAlert } from 'react-confirm-alert'; // Import
+import { confirmAlert } from 'react-confirm-alert';
 
 
 export default function PLayersDrawer({avPlayers, username, socket}) {
@@ -28,12 +28,12 @@ export default function PLayersDrawer({avPlayers, username, socket}) {
               {
                 label: 'TicTacToe Game',
                 onClick: () => {
-                  socket.emit('get_roles',(roles) => {
-                    const buttons = roles.map((role) => {
+                  socket.emit('get_rules',(rules) => {
+                    const buttons = rules.map((rule) => {
                       return {
-                        label: `${role} role`,
+                        label: `${rule} rule`,
                         onClick: () => {
-                          socket.emit('game_request', username, targetPlayer, role, 0,  (tarPLayer) => {
+                          socket.emit('game_request', username, targetPlayer, rule, 0,  () => {
                             localStorage.setItem('hanging_request', targetPlayer)
                             confirmAlert({
                               title: 'Confirm game request',
@@ -59,7 +59,7 @@ export default function PLayersDrawer({avPlayers, username, socket}) {
                     });
                     confirmAlert({
                       title: 'Game request',
-                      message: `Choose the role for the game (role number) is the number of winning required to get next level`,
+                      message: `Choose the rule for the game (rule number) is the number of winning required to get next level`,
                       buttons: buttons
                     });
                   });
@@ -69,12 +69,12 @@ export default function PLayersDrawer({avPlayers, username, socket}) {
               {
                 label: 'Rock Paper Sessior Game',
                 onClick: () => {
-                  socket.emit('get_roles',(roles) => {
-                    const buttons = roles.map((role) => {
+                  socket.emit('get_rules',(rules) => {
+                    const buttons = rules.map((rule) => {
                       return {
-                        label: `${role} role`,
+                        label: `${rule} rule`,
                         onClick: () => {
-                          socket.emit('game_request', username, targetPlayer, role, 1,  (tarPLayer) => {
+                          socket.emit('game_request', username, targetPlayer, rule, 1,  () => {
                             localStorage.setItem('hanging_request', targetPlayer)
                             confirmAlert({
                               title: 'Confirm game request',
@@ -100,7 +100,7 @@ export default function PLayersDrawer({avPlayers, username, socket}) {
                     });
                     confirmAlert({
                       title: 'Game request',
-                      message: `Choose the role for the game (role number) is the number of winning required to get next level`,
+                      message: `Choose the rule for the game (rule number) is the number of winning required to get next level`,
                       buttons: buttons
                     });
                   });
