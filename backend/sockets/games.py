@@ -153,8 +153,8 @@ async def cancel_request(sid,  username):
 async def join_room(sid, playerx, playero, game_type ,rule):
     room_number = "1"
     rooms = rooms_collection.find(sort=[( '_id', -1 )]).limit(1)
+    rooms = await rooms.to_list(None)
     if rooms:
-        rooms = await rooms.to_list(None)
         last_room = rooms[0]
         last_room_number = last_room.get('room_number')
         room_number = str(int(last_room_number)+1) 

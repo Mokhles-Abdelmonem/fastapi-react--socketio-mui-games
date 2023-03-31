@@ -70,6 +70,13 @@ export default function Game() {
 
   useEffect(() => {
 
+    socket.emit('update_player_session',  username);
+
+    socket.on('setTimer', (timer) => {
+      console.log('setTimer', timer)
+      setTimer(timer);
+    });
+
 
   }, []);
 

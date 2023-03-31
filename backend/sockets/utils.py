@@ -72,11 +72,12 @@ async def start_rock_paper_scissor_game():
 
 
 async def countdown_x(player_name, room_number, opponent_name):
-    x_time , x_turn, player_won = get_timer_data(room_number, "x_time")
+    x_time , x_turn, player_won = await get_timer_data(room_number, "x_time")
     while x_turn and x_time >= 0 and not player_won:
+        player_x = await users_collection.find_one({'username': player_name})
+        player_o = await users_collection.find_one({'username': opponent_name})
+        print("countdown for player " + str(player_x['sid']) + str(x_time))
         await sio_server.sleep(1)
-        player_x = users_collection.find_one({'username': player_name})
-        player_o = users_collection.find_one({'username': opponent_name})
         mins, secs = divmod(x_time, 60)
         timer = '{:02d}:{:02d}'.format(mins, secs)
         await sio_server.emit('setTimer', timer, to=player_x['sid'])
@@ -85,11 +86,11 @@ async def countdown_x(player_name, room_number, opponent_name):
             await sio_server.emit('TimeOut', to=room_number)
             # await declare_winner_back(player_o['sid'], player_o, player_x['username'])
             # await stop_time_back(room)
-        x_turn, player_won = get_timer_data(room_number)
+        x_turn, player_won = await get_timer_data(room_number)
 
 
-def get_timer_data(room_number, x_o_time=None):
-    room = rooms_collection.find_one({'room_number': room_number})
+async def get_timer_data(room_number, x_o_time=None):
+    room = await rooms_collection.find_one({'room_number': room_number})
     timer_switch = room["timer_switch"]
     x_turn = timer_switch.get("x_turn")
     player_won = timer_switch.get("player_won")
