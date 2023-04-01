@@ -41,7 +41,7 @@ export default function Game() {
   const username = user.sub
 
   const { innerWidth, innerHeight, outerHeight, outerWidth } = useWindowSize();
-  let browserHistory = useHistory();
+  const history = useHistory();
 
   const [level, setLevel] = useState(0);
   const [game, setGame] = useState(null);
@@ -50,8 +50,8 @@ export default function Game() {
   const leaveAction  = () => {
     if (playerWon || playerLost || playerDraw){
       socket.emit('player_left_room', opponentName);
-      socket.emit('leave_room', user, (result) => {
-        browserHistory.push("/dashboard") 
+      socket.emit('leave_room', username, opponentName, ()=>{
+        history.push("/")
       });
     }else{
       confirmAlert({
@@ -62,8 +62,8 @@ export default function Game() {
             label: 'leave',
             onClick: () => {
               socket.emit('player_left_in_game', opponentName);
-              socket.emit('leave_room', user, (result) => {
-                browserHistory.push("/dashboard") 
+              socket.emit('leave_room', username, opponentName, ()=>{
+                history.push("/")
               });
             }
           },
@@ -95,16 +95,36 @@ export default function Game() {
     });
   }
 
+  socket.on('notePlayerLeft', () => {
+    history.push("/") 
+    confirmAlert({
+      title: 'your opponent left the game',
+      message: `the room is empty now, we redirected you home page`,
+      buttons: [
+        {
+          label: 'Ok',
+          onClick: () => {
+
+          }
+        }
+      ],
+      onClickOutside: () => {
+      },
+    });
+  });
+
 
   useEffect(() => {
 
     socket.emit('update_player_session',  username ,(result) => {
       const player = result.player;
+      const opponent_name = result.opponent_name
       setPlayerWon(player.player_won);
       setPlayerLost(player.player_lost);
       setPlayerDraw(player.player_draw);
       setLevel(player.level);
       setRoom(player.room_number);
+      setOpponentName(opponent_name);
     });
 
     socket.emit('get_board', username ,(result) => {
@@ -136,6 +156,22 @@ export default function Game() {
         ]
       });
     });
+
+
+    socket.on('noteOpponentWon', () => {
+      confirmAlert({
+        title: 'Congrates you won',
+        message: `your opponent leaved the game , you daclared as winner`,
+        buttons: [
+          {
+            label: 'Ok',
+            onClick: () => {
+            }
+          }
+        ]
+      });
+    });
+
 
     socket.on('setBoard', (res) => {
       setBoard(res);

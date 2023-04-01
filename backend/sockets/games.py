@@ -54,19 +54,24 @@ async def get_player(sid, username):
 async def update_player_session(sid, username):
     users_collection.update_one({"username" : username}, {"$set" : {"sid": sid}})
     player = await users_collection.find_one({"username" : username})
+    player.pop("_id")
+    room_number = player.get("room_number")
+    opponent_name = None
+    if room_number:
+        room = await rooms_collection.find_one({"room_number" : room_number})
+        opponent_name = room["player_x"] if room["player_x"] != username else room["player_o"]
     if player['in_room']:
         sio_server.enter_room(sid, player['room_number'])
     else:
         sio_server.enter_room(sid,"general_room")
     players = await get_connected_players()
-    player.pop("_id")
-    return {"players_list":players, "player":player}
+    return {"players_list":players, "player":player, "opponent_name":opponent_name}
 
 
 
 @sio_server.event
 async def player_logged_out(sid, username):
-    player_obj = {
+    player_update = {
         "connected" : False,
         "in_room" : False,
         "room_number" : None,
@@ -81,7 +86,7 @@ async def player_logged_out(sid, username):
     room = player['room_number']
     sid = player['sid']
     sio_server.leave_room(sid, room)
-    users_collection.update_one({"username":username}, {"$set" : player_obj})
+    users_collection.update_one({"username":username}, {"$set" : player_update})
     players = await get_connected_players()
     await sio_server.emit('setPlayers', players)
 
@@ -159,7 +164,7 @@ async def join_room(sid, playerx, playero, game_type ,rule):
 
 
     player_x = await users_collection.find_one({"username":playerx})
-    player_o = await users_collection.find_one({"username":playerx})
+    player_o = await users_collection.find_one({"username":playero})
     sio_server.enter_room(player_x['sid'], room_number)
     sio_server.enter_room(player_o['sid'], room_number)
 
@@ -172,11 +177,8 @@ async def join_room(sid, playerx, playero, game_type ,rule):
         "in_room":True,
         "room_number":room_number,
     }
-
     users_collection.update_one({"username" : playerx}, {"$set" : player_update})
     users_collection.update_one({"username" : playero}, {"$set" : player_update})
-
-
     room = {
         "room_number":room_number,
         "player_x": playerx,
@@ -295,7 +297,6 @@ async def rematch_game(sid, room_number):
     users_collection.update_one({"username" : player_x}, {"$set" : player_update})
     users_collection.update_one({"username" : player_o}, {"$set" : player_update})
     rooms_collection.update_one({"room_number": room_number}, {"$set" : room_update})
-    print('room["game_type"] >>>>>>>>>>>>>>>>>>>>>> ', room["game_type"])
     if room["game_type"] == 0:
         sio_server.start_background_task(countdown_x, player_x, room_number, player_o)
     # if game == 1:
@@ -307,12 +308,58 @@ async def rematch_game(sid, room_number):
 
 @sio_server.event
 async def player_left_room(sid, opponent_name):
-    global names_list
-    global players
-    global room_number
-    name_index = names_list.index(opponent_name)
-    opponent = players[name_index]
-    players[name_index] = opponent
+    opponent =  await users_collection.find_one({"username": opponent_name})
     await sio_server.emit('notePlayerLeft', to=opponent['sid'])
+    players = await get_connected_players()
     await sio_server.emit('setPlayers', players)
+
+
+@sio_server.event
+async def leave_room(sid, username, opponent_name):
+    player = await users_collection.find_one({"username": username})
+    room = player['room_number']
+    sid = player['sid']
+    sio_server.enter_room(sid, 'general_room')
+    sio_server.leave_room(sid, room)
+    player_update = {
+        "in_room" : False,
+        "room_number" : None,
+        "player_won" : False,
+        "player_lost" : False,
+        "player_draw" : False,
+        "win_number" : 0,
+        "side" : '',
+    }
+    users_collection.update_one({"username" : username}, {"$set" : player_update})
+    users_collection.update_one({"username" : opponent_name}, {"$set" : player_update})
+    players = await get_connected_players()
+    await sio_server.emit('setPlayers', players)
+
+
+
+
+@sio_server.event
+async def player_left_in_game(sid, opponent_name):
+    player = await users_collection.find_one({"username": opponent_name})
+    room_number = player['room_number']
+    room = await rooms_collection.find_one({"room_number": room_number})
+    win_number = player.get('win_number')
+    player_level = player.get('level')
+    if not player_level:
+        player['level'] = 1
+    rule = room.get("rule")
+    if win_number != None:
+        if win_number >= 0: 
+            player['win_number'] += 1
+            if player['win_number'] % rule == 0 :
+                player['level'] += 1
+    else:
+        player['win_number'] = 0
+    player['player_won'] = True
+    rooms_collection.update_one({"room_number": room_number}, {"$set" : {"winner":opponent_name}})
+    users_collection.update_one({"username" : opponent_name}, {"$set" : player})
+    await sio_server.emit('declareWinner', {'winner': opponent_name, 'roomNumber':room})
+    await sio_server.emit('congrateWinner', player["level"], to=player['sid'])
+    await sio_server.emit('noteOpponentWon', to=player['sid'])
+
 
