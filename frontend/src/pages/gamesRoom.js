@@ -24,6 +24,8 @@ import Header from "../components/Header";
 
 export default function Game() {
   const [opponentName, setOpponentName] = useState('');
+  const [Room, setRoom] = useState('');
+
   const [timer, setTimer] = useState('');
   
   const [playerWon, setPlayerWon] = useState(false);
@@ -46,21 +48,47 @@ export default function Game() {
 
 
   const leaveAction  = () => {
+    if (playerWon || playerLost || playerDraw){
+      socket.emit('player_left_room', opponentName);
+      socket.emit('leave_room', user, (result) => {
+        browserHistory.push("/dashboard") 
+      });
+    }else{
+      confirmAlert({
+        title: 'Attention , you are in the middle of a game',
+        message: `leaving the game will consider loss`,
+        buttons: [
+          {
+            label: 'leave',
+            onClick: () => {
+              socket.emit('player_left_in_game', opponentName);
+              socket.emit('leave_room', user, (result) => {
+                browserHistory.push("/dashboard") 
+              });
+            }
+          },
+          {
+            label: 'Stay',
+            onClick: () => {
+            }
+          }
+        ]
+      });
+    }
 
   }
 
   const handelRemach  = () => {
-    if (user) {
-      socket.emit('rematch_game', username, opponentName, game);
+    console.log('handelRemach called');
+    socket.emit('rematch_game', Room);
   }
-}
 
   function handleClick(i) {
-    socket.emit('handle_click', i, user, opponentName);
+    socket.emit('handle_click', i, username);
   }
 
   function handleRPSClick(i) {
-    socket.emit('handle_rps_click', i, user, opponentName,(res)=>{
+    socket.emit('handle_rps_click', i, username, opponentName,(res)=>{
     if(res){
       setClicked(i);
     } 
@@ -70,14 +98,60 @@ export default function Game() {
 
   useEffect(() => {
 
-    socket.emit('update_player_session',  username);
+    socket.emit('update_player_session',  username ,(result) => {
+      const player = result.player;
+      setPlayerWon(player.player_won);
+      setPlayerLost(player.player_lost);
+      setPlayerDraw(player.player_draw);
+      setLevel(player.level);
+      setRoom(player.room_number);
+    });
+
+    socket.emit('get_board', username ,(result) => {
+      setBoard(result);
+    });
 
     socket.on('setTimer', (timer) => {
       console.log('setTimer', timer)
       setTimer(timer);
     });
 
+    socket.on('congrateWinner', (level) => {
+      setPlayerWon(true);
+      setLevel(level);
+    });
 
+    socket.on('noteOpponent', (level) => {
+      setPlayerLost(true);
+      setLevel(level);
+      confirmAlert({
+        title: 'Sorry you Lost',
+        message: `your can win next time`,
+        buttons: [
+          {
+            label: 'Ok',
+            onClick: () => {
+            }
+          }
+        ]
+      });
+    });
+
+    socket.on('setBoard', (res) => {
+      setBoard(res);
+    });
+
+    socket.on('rematchGame', () => {
+      setPlayerWon(false);
+      setPlayerLost(false);
+      setPlayerDraw(false);
+      setBoard([Array(9).fill(null)]);
+      setClicked(null);
+      socket.emit('get_user_level', username ,(level) => {
+          setLevel(level)
+      });
+    });
+    
   }, []);
 
 

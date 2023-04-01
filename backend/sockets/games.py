@@ -2,9 +2,6 @@ from .utils import *
 from fastapi_jwt_auth import AuthJWT
 
 
-def stop_time_back(room):
-    pass
-
 @sio_server.event
 async def connect(sid, environ, auth):
     if auth:
@@ -62,7 +59,8 @@ async def update_player_session(sid, username):
     else:
         sio_server.enter_room(sid,"general_room")
     players = await get_connected_players()
-    return players
+    player.pop("_id")
+    return {"players_list":players, "player":player}
 
 
 
@@ -124,11 +122,11 @@ async def get_rules(sid):
 
 
 @sio_server.event
-async def game_request(sid,  username_x, username_o, role, game_type):
+async def game_request(sid,  username_x, username_o, rule, game_type):
     context = {
         "username_x":username_x,
         "username_o":username_o,
-        "role":role,
+        "rule":rule,
         "game_type":game_type
         }
     player = await users_collection.find_one({"username":username_o})
@@ -178,27 +176,24 @@ async def join_room(sid, playerx, playero, game_type ,rule):
     users_collection.update_one({"username" : playerx}, {"$set" : player_update})
     users_collection.update_one({"username" : playero}, {"$set" : player_update})
 
-    timer_switch = {
-        "x_time":15,
-        "o_time":15,
-        "x_turn":True,
-        "player_won": False,
-    }
+
     room = {
         "room_number":room_number,
         "player_x": playerx,
         "player_o": playero,
         "winner": None,
         "draw": False,
+        "x_time":15,
+        "o_time":15,
+        "x_turn":True,
         "msgs": [],
-        "timer_switch":timer_switch,
         "rule": rule,
         "game_type": game_type,
         "history": [None for i in range(9)],
         "rps_game": {},
         }
 
-    rooms_collection.insert_one(room)
+    await rooms_collection.insert_one(room)
     players = await get_connected_players()
     await sio_server.emit('setPlayers', players)
     if game_type == 0:
@@ -209,7 +204,115 @@ async def join_room(sid, playerx, playero, game_type ,rule):
         sio_server.start_background_task(start_rock_paper_scissor_game , playerx, room_number, playero )
     await sio_server.emit('cofirmAccepted', game_type_str,  to=player_x['sid'])
     await sio_server.emit('pushToRoom', to=room_number)
-    print("join_room  >>>>>>>>> all pass successfully")
 
 
-    
+@sio_server.event
+async def chat_in_room(sid, username, message):
+    message = {
+        'sid': sid,
+        'message': message,
+        'username': username,
+        'type': 'chat'
+        }
+    user = await users_collection.find_one({"username": username})
+    room_number = user["room_number"]
+    room = await rooms_collection.find_one({"room_number": room_number})
+    msgs = room["msgs"]
+    msgs.append(message)
+    rooms_collection.update_one({"room_number": room_number}, {"$set" : {"msgs":msgs}})
+    await sio_server.emit('chatInRoom', msgs, to=room_number)
+
+@sio_server.event
+async def get_chat_in_room(sid, username):
+    user = await users_collection.find_one({"username": username})
+    room = await rooms_collection.find_one({"room_number": user["room_number"]})
+    return room["msgs"]
+
+
+@sio_server.event
+async def get_board(sid, username):
+        user = await users_collection.find_one({"username": username})
+        room = await rooms_collection.find_one({"room_number": user["room_number"]})
+        return room["history"]
+
+
+@sio_server.event
+async def get_user_level(sid, username):
+    player = await users_collection.find_one({"username": username})
+    return player['level']
+
+
+
+@sio_server.event
+async def handle_click(sid, i, username):
+    player = await users_collection.find_one({"username": username})
+    room_number = player['room_number']
+    room = await rooms_collection.find_one({"room_number": room_number})
+
+    player_time = room["x_time"] if room["player_x"] == username else room["x_time"]
+    room_history = room["history"]
+    rule = room["rule"]
+    rule_obj = await rule_collection.find_one({"winning_number": rule})
+    winner = calculate_winner(room_history, rule_obj["rules"])
+    player_turn = get_player_turn(room_history)
+    player_won = room["winner"]
+    if winner or room_history[i] or not player_time or room[player_turn] !=username or player_won :
+        return
+    opponent_name = room["player_o"] if room["player_x"] == username else room["player_x"]
+    await switch_timer(player, opponent_name, player_turn)
+    side = "X" if player_turn == "player_x" else "O"
+    room_history[i] = side
+    winner = calculate_winner(room_history, rule_obj["rules"])
+    if winner == 'tie':
+        await sio_server.emit('declareDraw', to=room_number)
+    elif winner :
+        opponent = await users_collection.find_one({"username": opponent_name})
+        await declare_winner(player, opponent, room)
+
+
+    rooms_collection.update_one({"room_number": room_number}, {"$set" : {"history":room_history}})
+    await sio_server.emit('setBoard', room_history , to=room_number)
+
+@sio_server.event
+async def rematch_game(sid, room_number):
+    player_update = {
+        "player_won" : False,
+        "player_lost" : False,
+        "player_draw" : False
+    }
+    room_update = {
+        "winner": None,
+        "draw": False,
+        "x_time":15,
+        "o_time":15,
+        "x_turn":True,
+        "history": [None for i in range(9)],
+        "rps_game": {},
+        }
+    room = await rooms_collection.find_one({"room_number": room_number})
+    player_o = room["player_o"]
+    player_x = room["player_x"]
+    users_collection.update_one({"username" : player_x}, {"$set" : player_update})
+    users_collection.update_one({"username" : player_o}, {"$set" : player_update})
+    rooms_collection.update_one({"room_number": room_number}, {"$set" : room_update})
+    print('room["game_type"] >>>>>>>>>>>>>>>>>>>>>> ', room["game_type"])
+    if room["game_type"] == 0:
+        sio_server.start_background_task(countdown_x, player_x, room_number, player_o)
+    # if game == 1:
+    #     global rps_game_dict
+    #     rps_game_dict[room] = {}
+    #     sio_server.start_background_task(countdown_rps_game, player_name, str(room_number), opponent_name )
+    await sio_server.emit('rematchGame', to=room_number)
+
+
+@sio_server.event
+async def player_left_room(sid, opponent_name):
+    global names_list
+    global players
+    global room_number
+    name_index = names_list.index(opponent_name)
+    opponent = players[name_index]
+    players[name_index] = opponent
+    await sio_server.emit('notePlayerLeft', to=opponent['sid'])
+    await sio_server.emit('setPlayers', players)
+

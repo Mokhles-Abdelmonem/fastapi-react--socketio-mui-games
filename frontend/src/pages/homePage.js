@@ -58,8 +58,8 @@ export default function Home() {
       history.push('/login');
     });
 
-    socket.emit('update_player_session',  username ,(playersList) => {
-      setPlayers(playersList);
+    socket.emit('update_player_session',  username ,(result) => {
+      setPlayers(result.players_list);
     });
 
     socket.emit('get_messages' ,(result) => {
@@ -85,7 +85,7 @@ export default function Home() {
             label: 'Yes',
             onClick: () => {
               localStorage.removeItem('hanging_response');
-              socket.emit('join_room', data.username_x, data.username_o, data.game_type, data.role);
+              socket.emit('join_room', data.username_x, data.username_o, data.game_type, data.rule);
               history.push('/game_room')
             }
           },
@@ -172,6 +172,10 @@ export default function Home() {
       });
     });
 
+
+    socket.on('declareWinner', (data) => {
+      setMessages((prevMessages) => [...prevMessages, { ...data, type: 'winner'}]);
+    });
 
     const hangingRequestPlayer = localStorage.getItem('hanging_request');
     if (hangingRequestPlayer) {

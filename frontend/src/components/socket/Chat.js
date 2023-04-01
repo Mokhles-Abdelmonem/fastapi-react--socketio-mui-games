@@ -23,13 +23,9 @@ export default function Chat({level}) {
 
 
   useEffect(() => {
-    if (user) {
-    socket.emit('get_chat_messages', user.username ,(result) => {
-      if (result){
-        setMessages(result);
-      }
+    socket.emit('get_chat_in_room', username ,(result) => {
+      setMessages(result);
     });
-  }
     
     socket.on('chatInRoom', (messages) => {
       setMessages(messages);
@@ -81,9 +77,7 @@ export default function Chat({level}) {
                       endIcon={<SendIcon />}
                       onClick={() => {
                           if (message && message.length) {
-                            if (user.in_room) {
-                              socket.emit('chat_in_room', user.username, message);
-                            }
+                            socket.emit('chat_in_room', username, message);
                           }
                           var messageBox = document.getElementById('input-with-message');
                           messageBox.value = '';
@@ -98,7 +92,7 @@ export default function Chat({level}) {
                 ):(
                   <Typography>
                     you are a level {level} player
-                    win games in role number to get the next level
+                    win games in rule number to get the next level
                     and be able to chat
                   </Typography>
                 )}
