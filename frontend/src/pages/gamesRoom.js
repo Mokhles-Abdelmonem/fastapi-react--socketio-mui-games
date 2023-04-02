@@ -37,7 +37,7 @@ export default function Game() {
 
   const [Clicked, setClicked] = useState(null);
 
-  const { user, socket } = useContext(AuthContext);
+  const { user, socket, logoutUser } = useContext(AuthContext);
   const username = user.sub
 
   const { innerWidth, innerHeight, outerHeight, outerWidth } = useWindowSize();
@@ -88,7 +88,7 @@ export default function Game() {
   }
 
   function handleRPSClick(i) {
-    socket.emit('handle_rps_click', i, username, opponentName,(res)=>{
+    socket.emit('handle_rps_click', i, username, opponentName, Room,(res)=>{
     if(res){
       setClicked(i);
     } 
@@ -125,10 +125,16 @@ export default function Game() {
       setLevel(player.level);
       setRoom(player.room_number);
       setOpponentName(opponent_name);
+      if(!player.in_room) history.push("/")
     });
 
     socket.emit('get_board', username ,(result) => {
       setBoard(result);
+    });
+
+    socket.emit('get_game', username ,(result) => {
+      console.log("result of getting the game", result);
+      setGame(result);
     });
 
     socket.on('setTimer', (timer) => {
@@ -159,6 +165,7 @@ export default function Game() {
 
 
     socket.on('noteOpponentWon', () => {
+      history.push("/")
       confirmAlert({
         title: 'Congrates you won',
         message: `your opponent leaved the game , you daclared as winner`,
@@ -187,7 +194,30 @@ export default function Game() {
           setLevel(level)
       });
     });
-    
+
+    socket.on('declareDraw', () => {
+      setPlayerDraw(true);
+      confirmAlert({
+        title: 'Tie ',
+        message: `the game settled to draw, your can win next time`,
+        buttons: [
+          {
+            label: 'Ok',
+            onClick: () => {
+            }
+          }
+        ]
+      });
+    });
+
+    socket.on('logeUserOutFromRoom',  ()  => {
+      logoutUser();
+    });
+
+    socket.on('logeUserOut',  ()  => {
+      logoutUser();
+    });
+
   }, []);
 
 

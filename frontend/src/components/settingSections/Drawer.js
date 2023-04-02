@@ -67,7 +67,7 @@ export default function PLayersDrawer({avPlayers, username, socket}) {
                 }
               },
               {
-                label: 'Rock Paper Sessior Game',
+                label: 'Rock Paper Scissor Game',
                 onClick: () => {
                   socket.emit('get_rules',(rules) => {
                     const buttons = rules.map((rule) => {

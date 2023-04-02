@@ -70,7 +70,7 @@ async def update_player_session(sid, username):
 
 
 @sio_server.event
-async def player_logged_out(sid, username):
+async def player_logged_out(sid, username, opponent_name):
     player_update = {
         "connected" : False,
         "in_room" : False,
@@ -86,7 +86,11 @@ async def player_logged_out(sid, username):
     room = player['room_number']
     sid = player['sid']
     sio_server.leave_room(sid, room)
-    users_collection.update_one({"username":username}, {"$set" : player_update})
+    await users_collection.update_one({"username":username}, {"$set" : player_update})
+    if opponent_name:
+        await users_collection.update_one({"username":opponent_name}, {"$set" : player_update})
+    opponent = await users_collection.find_one({"username":opponent_name})
+    print("opponent >>>>>>>>>>>>>>>>>>>> ", opponent)
     players = await get_connected_players()
     await sio_server.emit('setPlayers', players)
 
@@ -194,6 +198,7 @@ async def join_room(sid, playerx, playero, game_type ,rule):
         "history": [None for i in range(9)],
         "rps_game": {},
         }
+    print("<<<<<<<<< (room in join room) >>>>>>>>>" , room)
 
     await rooms_collection.insert_one(room)
     players = await get_connected_players()
@@ -201,9 +206,11 @@ async def join_room(sid, playerx, playero, game_type ,rule):
     if game_type == 0:
         game_type_str = "Tic Tac Toe"
         sio_server.start_background_task(countdown_x, playerx, room_number, playero)
+        print("<<<<<<<<< (game_type in join room) >>>>>>>>>" , game_type)
     elif game_type == 1:
+        print("<<<<<<<<< (game_type in join room) >>>>>>>>>" , game_type)
         game_type_str = "Rock Paper Scissor"
-        sio_server.start_background_task(start_rock_paper_scissor_game , playerx, room_number, playero )
+        sio_server.start_background_task(start_rps_game , playerx, room_number, playero )
     await sio_server.emit('cofirmAccepted', game_type_str,  to=player_x['sid'])
     await sio_server.emit('pushToRoom', to=room_number)
 
@@ -266,7 +273,7 @@ async def handle_click(sid, i, username):
     room_history[i] = side
     winner = calculate_winner(room_history, rule_obj["rules"])
     if winner == 'tie':
-        await sio_server.emit('declareDraw', to=room_number)
+        await declare_draw(username, room_number, opponent_name)
     elif winner :
         opponent = await users_collection.find_one({"username": opponent_name})
         await declare_winner(player, opponent, room)
@@ -299,15 +306,14 @@ async def rematch_game(sid, room_number):
     rooms_collection.update_one({"room_number": room_number}, {"$set" : room_update})
     if room["game_type"] == 0:
         sio_server.start_background_task(countdown_x, player_x, room_number, player_o)
-    # if game == 1:
-    #     global rps_game_dict
-    #     rps_game_dict[room] = {}
-    #     sio_server.start_background_task(countdown_rps_game, player_name, str(room_number), opponent_name )
+    if room["game_type"] == 1:
+        sio_server.start_background_task(start_rps_game, player_x, room_number, player_o)
     await sio_server.emit('rematchGame', to=room_number)
 
 
 @sio_server.event
 async def player_left_room(sid, opponent_name):
+    print("player left room called test number 1 >>>>>>>>>>> ",opponent_name)
     opponent =  await users_collection.find_one({"username": opponent_name})
     await sio_server.emit('notePlayerLeft', to=opponent['sid'])
     players = await get_connected_players()
@@ -330,8 +336,8 @@ async def leave_room(sid, username, opponent_name):
         "win_number" : 0,
         "side" : '',
     }
-    users_collection.update_one({"username" : username}, {"$set" : player_update})
-    users_collection.update_one({"username" : opponent_name}, {"$set" : player_update})
+    await users_collection.update_one({"username" : username}, {"$set" : player_update})
+    await users_collection.update_one({"username" : opponent_name}, {"$set" : player_update})
     players = await get_connected_players()
     await sio_server.emit('setPlayers', players)
 
@@ -356,10 +362,49 @@ async def player_left_in_game(sid, opponent_name):
     else:
         player['win_number'] = 0
     player['player_won'] = True
+    player.pop('_id')
     rooms_collection.update_one({"room_number": room_number}, {"$set" : {"winner":opponent_name}})
     users_collection.update_one({"username" : opponent_name}, {"$set" : player})
-    await sio_server.emit('declareWinner', {'winner': opponent_name, 'roomNumber':room})
+    await sio_server.emit('declareWinner', {'winner': opponent_name, 'roomNumber':room_number})
     await sio_server.emit('congrateWinner', player["level"], to=player['sid'])
     await sio_server.emit('noteOpponentWon', to=player['sid'])
 
+@sio_server.event
+async def get_opponent(sid, username,room_number):
+    room = await rooms_collection.find_one({"room_number" : room_number})
+    opponent_name = room["player_x"] if room["player_x"] != username else room["player_o"]
+    return opponent_name
 
+
+
+
+@sio_server.event
+async def handle_rps_click(sid, i , username, opponent_name, room_number):
+    room = await rooms_collection.find_one({"room_number" : room_number})
+    game_res = room.get("rps_game")
+    player_choice = game_res.get(username)
+    opponent_choice = game_res.get(opponent_name)
+    player_won = room["winner"]
+    if player_choice or player_choice == 0 or player_won:
+        return False
+    if opponent_choice or opponent_choice == 0:
+        winner = calculate_rps_winner(i , opponent_choice)
+        if winner == 'draw':
+            await declare_draw(username, room_number, opponent_name)
+        else:
+            player = await users_collection.find_one({"username": username})
+            opponent = await users_collection.find_one({"username": opponent_name})
+            if winner == 0:
+                await declare_winner(player, opponent, room)
+            elif winner == 1:
+                await declare_winner(opponent, player, room)
+    game_res[username] = i
+    rooms_collection.update_one({"room_number": room_number}, {"$set" : {"rps_game":game_res}})
+    return True
+
+
+@sio_server.event
+async def get_game(sid, username):
+    user = await users_collection.find_one({"username": username})
+    room = await rooms_collection.find_one({"room_number": user["room_number"]})
+    return room['game_type']

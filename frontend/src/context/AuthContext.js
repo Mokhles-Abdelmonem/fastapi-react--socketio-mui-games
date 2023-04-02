@@ -54,8 +54,6 @@ export const AuthProvider = ({ children }) => {
 
   if (Token) {
     verifyToken();
-  }else{
-    history.push('/login')
   }
 
 

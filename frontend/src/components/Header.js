@@ -1,4 +1,4 @@
-import React, {useContext} from 'react'
+import React, {useContext, useEffect, useState} from 'react'
 import {  useHistory } from 'react-router-dom'
 import AuthContext from '../context/AuthContext'
 import PropTypes from 'prop-types';
@@ -14,19 +14,20 @@ const socket = io(process.env.REACT_APP_API_URL, {
 
 function Header() {
   const { user, logoutUser } = useContext(AuthContext);
+  const [isAdmin , setIsAdmin] = useState(false);
+  const [inRoom, setInRoom] = useState(true);
   const username = user.sub
   const history = useHistory();
   const logoutHandler = () => {
-
-      if(user.in_room){
-        if(user.player_won || user.player_lost){
-          socket.emit('get_opponent', username,(opponent) => {   
-            socket.emit('player_left_room', opponent);
-            socket.emit('player_logged_out', username);
+    socket.emit('get_player', username,(player) => {   
+      console.log('logged out', player)
+      if(player.in_room){
+        socket.emit('get_opponent', username, player.room_number, (opponent_name) => {   
+          if(player.player_won || player.player_lost){
+            socket.emit('player_left_room', opponent_name);
+            socket.emit('player_logged_out', username, opponent_name);
             logoutUser();
-        });
-        }else{
-          socket.emit('get_opponent', username,(opponent) => {        
+          }else{
             confirmAlert({
               title: 'Attention , you are in the middle of a game',
               message: `logout now will consider loss in game`,
@@ -34,10 +35,10 @@ function Header() {
                 {
                   label: 'Logout',
                   onClick: () => {
-                    socket.emit('player_left_in_game', opponent);
-                    socket.emit('player_logged_out', username);
+                    socket.emit('player_left_in_game', opponent_name);
+                    socket.emit('player_logged_out', username, opponent_name);
                     logoutUser();
-
+                    
                   }
                 },
                 {
@@ -47,15 +48,14 @@ function Header() {
                 }
               ]
             });
-          });
-        }
-      }else{
-        socket.emit('player_logged_out', username);
+          }
+        });
+        }else{
+        socket.emit('player_logged_out', username, null);
         logoutUser();
       }
 
-
-
+    });
   };
 
 
@@ -73,7 +73,7 @@ function Header() {
   const settingsLinks = (
     <>
     {
-    user.is_admin && !user.in_room ? 
+    isAdmin && !inRoom ? 
     (
       <Button href="/admin" variant="outlined" size="small">
         Acount Settings
@@ -89,6 +89,13 @@ function Header() {
     </>
   );
 
+  
+  useEffect(() => {
+    socket.emit('get_player', username , (player)=> {
+      setIsAdmin(player.is_admin);
+      setInRoom(player.in_room);
+    })
+  });
 
   return (
     <React.Fragment>

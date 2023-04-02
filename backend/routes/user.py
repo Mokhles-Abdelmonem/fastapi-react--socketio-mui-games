@@ -5,7 +5,7 @@ from models.user import RegisterJson, LoginJson, UpdatedUserJson
 from fastapi_jwt_auth import AuthJWT
 from utils.crud import * 
 from sockets.server import sio_server 
-from sockets.games import stop_time_back
+from sockets.games import stop_time_back, player_left_in_game, player_left_room
 from models.user import Token, UserInDB
 from pydantic import BaseModel
 
@@ -45,7 +45,7 @@ async def admin_update_users(username , updated_user: UpdatedUserJson, current_u
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"error": "UNAUTHORIZED to update users"},
     )
-    updated_user_fields = {
+    user_update = {
         "level":updated_user.level,
         "disabled":updated_user.disabled
         }
@@ -60,20 +60,15 @@ async def admin_update_users(username , updated_user: UpdatedUserJson, current_u
         if sid:
             in_room = user.get('in_room')
             if in_room:
-                room = user['room_number']
-                await stop_time_back(room)
-                players_in_room = users_collection.find({"room_number" : room})
-                async for player in players_in_room :
-                    if player['username'] != username :
-                        opponent = player 
-
-                await sio_server.emit('logeUserOutFromRoom', opponent["username"], to=sid)
-            else:
-                await sio_server.emit('logeUserOut', to=sid)
+                room = await rooms_collection.find_one({"room_number" : user["room_number"]})
+                opponent_name = room["player_x"] if room["player_x"] != username else room["player_o"]
+                await player_left_in_game(sid, opponent_name)
+                await player_left_room(sid, opponent_name)
+            await sio_server.emit('logeUserOut', to=sid)
 
         else:
             await sio_server.emit('logeUserOutByName',username)   
-        updated_user_fields = {
+        user_update = {
             "joined" : False,
             "in_room" : False,
             "room_number" : None,
@@ -86,9 +81,7 @@ async def admin_update_users(username , updated_user: UpdatedUserJson, current_u
             "disabled":updated_user.disabled
             }
 
-    users_collection.update_one({"username" : username}, {"$set" : updated_user_fields})
-    user = await users_collection.find_one({"username" : username})
-
+    users_collection.update_one({"username" : username}, {"$set" : user_update})
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={"success": "User successfully updated"},
@@ -113,10 +106,7 @@ async def admin_delete_users(username , current_user: User = Depends(get_current
     if sid:
         in_room = user.get('in_room')
         if in_room:
-            room = user['room_number']
-            await stop_time_back(room)
-            opponent = await users_collection.find_one({"room_number" : room})
-            await sio_server.emit('logeUserOutFromRoom', opponent["username"], to=sid)
+            await sio_server.emit('logeUserOutFromRoom', to=sid)
         else:
             await sio_server.emit('logeUserOut', to=sid)
 

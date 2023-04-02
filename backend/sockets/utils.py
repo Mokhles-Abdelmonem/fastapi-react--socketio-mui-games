@@ -9,30 +9,36 @@ async def countdown_disconnected_user(user):
     connected = False
     opponent_name = ''
     username = user["username"]
-    player_room = user["room_number"]
-    # player_list = room_dict.get(player_room)
-    # if player_list:
-    #     for player_name in player_list:
-    #         if player_name != username:
-    #             opponent_name = player_name
-
-    # while time and not connected:
-    #     await sio_server.sleep(1)
-    #     time -= 1
-    #     player = get_player(username)
-    #     opponent = get_player(opponent_name)
-    #     if time == 0:        
-    #         if player_list:
-    #             if not opponent['player_draw'] and not opponent['player_lost'] and not opponent['player_won']:
-    #                 await sio_server.emit('declareWinner', {'winner': opponent_name, 'roomNumber':opponent["room_number"]})
-    #                 await sio_server.emit('noteOpponentWon', to=opponent['sid'])
-    #                 await sio_server.emit('congrateWinner', opponent, to=opponent['sid'])
-    #         if opponent:
-    #             await sio_server.emit('setDisconnectedPlayer', username, to=opponent['sid'])
-    #             await sio_server.emit('notePlayerLeft', to=opponent['sid'])
-    #             await stop_time_back(player_room)
-    #     player = await users_collection.find_one({"username":username})
-    #     connected = player['connected']
+    room_number = user["room_number"]
+    room = await rooms_collection.find_one({"room_number" : room_number})
+    opponent_name = room["player_x"] if room["player_x"] != username else room["player_o"]
+    while time and not connected:
+        await sio_server.sleep(1)
+        time -= 1
+        player = await users_collection.find_one({"username":username})
+        opponent = await users_collection.find_one({"username":opponent_name})
+        if time == 0:        
+            if not opponent['player_draw'] and not opponent['player_lost'] and not opponent['player_won']:
+                await sio_server.emit('declareWinner', {'winner': opponent_name, 'roomNumber':opponent["room_number"]})
+                await sio_server.emit('noteOpponentWon', to=opponent['sid'])
+                await sio_server.emit('congrateWinner', opponent["level"], to=opponent['sid'])
+            await sio_server.emit('notePlayerLeft', to=opponent['sid'])
+            
+            player_obj = {
+                "joined" : False,
+                "in_room" : False,
+                "room_number" : None,
+                "player_won" : False,
+                "player_lost" : False,
+                "player_draw" : False,
+                "side" : '',
+                "status" : '',
+            }
+            users_collection.update_one({"username" : username}, {"$set" : player_obj})
+            users_collection.update_one({"username" : opponent_name}, {"$set" : player_obj})
+            print("DisConnected Player updated successfully in ", time)
+        connected = player['connected']
+        print("DisConnected Player for ", time)
 
 
 def player_helper(player):
@@ -66,10 +72,33 @@ async def retrieve_rules():
     return rules
 
 
-async def start_rock_paper_scissor_game():
-    pass
-
-
+async def start_rps_game(player_name, room_number, opponent_name):
+    g_time = 15
+    player_still = True
+    player_won = False
+    while g_time >= 0 and player_still and not player_won:
+        await sio_server.sleep(1)
+        mins, secs = divmod(g_time, 60)
+        timer = '{:02d}:{:02d}'.format(mins, secs)
+        player = await users_collection.find_one({'username': player_name})
+        opponent = await users_collection.find_one({'username': opponent_name})
+        await sio_server.emit('setTimer', timer, to=room_number)
+        room = await rooms_collection.find_one({"room_number" : room_number})
+        game_res = room.get("rps_game")
+        player_still = len(game_res.keys()) < 2
+        player_won = room["winner"]
+        g_time -= 1
+        if g_time == -1:
+            player_choise = game_res.get(player_name)
+            print("player_choise >>>>>>>>>> ", player_choise)
+            opponent_choise = game_res.get(opponent_name)
+            print("opponent_choise >>>>>>> ", opponent_choise)
+            if player_choise == None and opponent_choise == None:
+                await declare_draw(player_name, room_number, opponent_name)
+            elif player_choise or player_choise == 0 :
+                await declare_winner(player, opponent, room)
+            elif opponent_choise or opponent_choise == 0:
+                await declare_winner(opponent, player, room)
 
 async def countdown_x(player_name, room_number, opponent_name):
     await rooms_collection.update_one({"room_number":room_number},{"$set" : {"x_turn": True}})
@@ -140,6 +169,12 @@ async def declare_winner(winner, opponent, room):
     await sio_server.emit('congrateWinner', winner['level'], to=winner['sid'])
     await sio_server.emit('noteOpponent', opponent['level'] , to=opponent['sid'])
 
+async def declare_draw(player_name, room_number, opponent_name):
+    rooms_collection.update_one({"room_number":room_number}, {"$set" : {"draw": True}})
+    users_collection.update_one({"username" : player_name}, {"$set" : {"player_draw":True}})
+    users_collection.update_one({"username" : opponent_name}, {"$set" : {"player_draw":True}})
+    await sio_server.emit('declareDraw', to=room_number)
+
 
 
 async def switch_timer(player, opponent_name, player_turn):
@@ -149,16 +184,9 @@ async def switch_timer(player, opponent_name, player_turn):
         sio_server.start_background_task(countdown_x, opponent_name, player["room_number"], player["username"])
 
 
-
-
-
-
-
-
 async def stop_time_back(room_number):
     # await sio_server.emit('stopTimer', to=room_number)
     pass
-
 
 
 def calculate_winner(squares, rules):

@@ -4,8 +4,6 @@ import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { updateProfille } from '../../actions/auth/updateProfile';
 import { Formik, Form, Field } from 'formik';
 import { updateUserSchema } from "../../schemas";
 import { TextField } from 'formik-mui';
@@ -15,10 +13,7 @@ import { deleteUser } from '../../api/deleteUser';
 
 
 export default function AdminSettings ({selectedPlayer}) {
-  
-    const user = useSelector(state => state.auth.user);
-    const dispatch = useDispatch();
-    const loading = useSelector(state => state.auth.loading);
+
 
     const initialState = {
       level: '',
@@ -48,13 +43,12 @@ export default function AdminSettings ({selectedPlayer}) {
       console.log("values submitted to Admin", selectedPlayer, values);
       await new Promise((resolve) => setTimeout(resolve, 1000));
       actions.resetForm();
-
+      
       setAlertData({...initialState})
       
       updateUsers(selectedPlayer, parseInt(values.level), values.toggle)
       .then((res) => setAlertData(alertData =>({...alertData,...res,})
       ));
-
   }
 
     {success && console.log(success);}
@@ -103,10 +97,7 @@ export default function AdminSettings ({selectedPlayer}) {
                     </label>
                   </Grid>
                 </Grid>
-                {
-                  loading ? (
-                  <CircularProgress />
-                  ) : (
+
                   <Button
                     type="submit"
                     fullWidth
@@ -116,8 +107,6 @@ export default function AdminSettings ({selectedPlayer}) {
                   >
                     update
                   </Button>
-                  )
-                }
     
                 {
                   success && 
@@ -137,16 +126,16 @@ export default function AdminSettings ({selectedPlayer}) {
               )}
               
             </Formik>
-            <Button
-                    type="submit"
-                    variant="contained"
-                    color='error'
-                    id={selectedPlayer}
-                    sx={{ mt: 3, mb: 1 }}
-                    onClick={handleDeletePlayer}
-                  >
-                    delete {selectedPlayer}
-            </Button>
+                <Button
+                type="submit"
+                variant="contained"
+                color='error'
+                id={selectedPlayer}
+                sx={{ mt: 3, mb: 1 }}
+                onClick={handleDeletePlayer}
+                >
+                  delete {selectedPlayer}
+                </Button>
           </Box>
         ):
         (
