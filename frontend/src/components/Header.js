@@ -109,7 +109,7 @@ function Header() {
           noWrap
           sx={{ flex: 1 }}
         >
-          Welcom to TicTacToe Game
+          Welcom to Socketio Games {username} 
         </Typography>
         {user ? settingsLinks : authLinks}
 

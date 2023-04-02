@@ -20,7 +20,8 @@ async def disconnect(sid):
         users_collection.update_one({"sid":sid}, {"$set" : {"connected":False}})
         players = await get_connected_players()
         await sio_server.emit('setPlayers', players)
-        sio_server.start_background_task(countdown_disconnected_user, user )
+        if user['in_room']:
+            sio_server.start_background_task(countdown_disconnected_user, user )
 
 
 
