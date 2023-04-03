@@ -5,7 +5,7 @@ from models.user import RegisterJson, LoginJson, UpdatedUserJson
 from fastapi_jwt_auth import AuthJWT
 from utils.crud import * 
 from sockets.server import sio_server 
-from sockets.games import stop_time_back, player_left_in_game, player_left_room
+from sockets.games import stop_time_back, player_left_in_game, leave_room
 from models.user import Token, UserInDB
 from pydantic import BaseModel
 
@@ -63,13 +63,10 @@ async def admin_update_users(username , updated_user: UpdatedUserJson, current_u
                 room = await rooms_collection.find_one({"room_number" : user["room_number"]})
                 opponent_name = room["player_x"] if room["player_x"] != username else room["player_o"]
                 await player_left_in_game(sid, opponent_name)
-                await player_left_room(sid, opponent_name)
+                await leave_room(sid, username, opponent_name)
             await sio_server.emit('logeUserOut', to=sid)
-
-        else:
-            await sio_server.emit('logeUserOutByName',username)   
         user_update = {
-            "joined" : False,
+            "joined" : True,
             "in_room" : False,
             "room_number" : None,
             "player_won" : False,
@@ -106,14 +103,13 @@ async def admin_delete_users(username , current_user: User = Depends(get_current
     if sid:
         in_room = user.get('in_room')
         if in_room:
-            await sio_server.emit('logeUserOutFromRoom', to=sid)
-        else:
-            await sio_server.emit('logeUserOut', to=sid)
+            room = await rooms_collection.find_one({"room_number" : user["room_number"]})
+            opponent_name = room["player_x"] if room["player_x"] != username else room["player_o"]
+            await player_left_in_game(sid, opponent_name)
+            await leave_room(sid, username, opponent_name)
+        await sio_server.emit('logeUserOut', to=sid)
 
-    else:
-        await sio_server.emit('logeUserOutByName',username)   
     users_collection.delete_one({"username" : username})
-
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,

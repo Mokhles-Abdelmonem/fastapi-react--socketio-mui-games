@@ -8,7 +8,7 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import React, { useEffect, useState } from 'react';
 
-import { Redirect, useHistory } from "react-router-dom";
+import { useHistory } from "react-router-dom";
 import useWindowSize from "@rooks/use-window-size"
 import Confetti from 'react-confetti'
 import { confirmAlert } from 'react-confirm-alert';
@@ -208,10 +208,6 @@ export default function Game() {
           }
         ]
       });
-    });
-
-    socket.on('logeUserOutFromRoom',  ()  => {
-      logoutUser();
     });
 
     socket.on('logeUserOut',  ()  => {

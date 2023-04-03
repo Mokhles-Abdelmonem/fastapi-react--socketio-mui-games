@@ -51,7 +51,7 @@ async def get_connected_players():
     players = users_collection.find({"connected" : True})
     async for player in players:
         player_name = player['username'] 
-        if not player['in_room']:
+        if not player['in_room'] and player['joined']:
             players_list.append(player_name)
     return players_list
 
@@ -102,8 +102,8 @@ async def start_rps_game(player_name, room_number, opponent_name):
 
 async def countdown_x(player_name, room_number, opponent_name):
     await rooms_collection.update_one({"room_number":room_number},{"$set" : {"x_turn": True}})
-    x_time , x_turn, winner, room = await get_timer_data(room_number, "x_time")
-    while x_turn and x_time >= 0 and not winner:
+    x_time , x_turn, winner, draw, room = await get_timer_data(room_number, "x_time")
+    while x_turn and x_time >= 0 and not winner and not draw:
         player = await users_collection.find_one({'username': player_name})
         opponent = await users_collection.find_one({'username': opponent_name})
         print("countdown for player " + str(player_name) + str(x_time))
@@ -114,12 +114,12 @@ async def countdown_x(player_name, room_number, opponent_name):
         x_time -= 1
         if x_time == -1:
             await declare_winner(opponent, player, room)
-        x_turn, winner, room = await get_timer_data(room_number)
+        x_turn, winner, draw, room = await get_timer_data(room_number)
 
 async def countdown_o(player_name, room_number, opponent_name):
     await rooms_collection.update_one({"room_number":room_number},{"$set" : {"x_turn": False}})
-    o_time , x_turn, winner, room = await get_timer_data(room_number, "o_time")
-    while not x_turn and o_time >= 0 and not winner:
+    o_time , x_turn, winner, draw, room = await get_timer_data(room_number, "o_time")
+    while not x_turn and o_time >= 0 and not winner and not draw:
         player = await users_collection.find_one({'username': player_name})
         opponent = await users_collection.find_one({'username': opponent_name})
         print("countdown for player " + str(player_name) + str(o_time))
@@ -130,7 +130,7 @@ async def countdown_o(player_name, room_number, opponent_name):
         o_time -= 1
         if o_time == -1:
             await declare_winner(opponent, player, room)
-        x_turn, winner, room = await get_timer_data(room_number)
+        x_turn, winner, draw, room = await get_timer_data(room_number)
 
 
 
@@ -139,10 +139,11 @@ async def get_timer_data(room_number, x_o_time=None):
     room = await rooms_collection.find_one({'room_number': room_number})
     x_turn = room.get("x_turn")
     winner = room.get("winner")
+    draw = room.get("draw")
     if x_o_time:
         time = room.get(x_o_time)
-        return time, x_turn, winner, room
-    return x_turn, winner, room
+        return time, x_turn, winner, draw, room
+    return x_turn, winner, draw, room
 
 
 async def declare_winner(winner, opponent, room):

@@ -29,6 +29,7 @@ async def disconnect(sid):
 async def add_user(sid, username):
     player_obj = {
         "sid" : sid,
+        "joined" : True,
         "connected" : True,
         "in_room" : False,
         "room_number" : None,
@@ -409,3 +410,9 @@ async def get_game(sid, username):
     user = await users_collection.find_one({"username": username})
     room = await rooms_collection.find_one({"room_number": user["room_number"]})
     return room['game_type']
+
+@sio_server.event
+async def update_joined(sid, username, value):
+    await users_collection.update_one({"username": username}, {"$set" : {"joined": value}})
+    players = await get_connected_players()
+    await sio_server.emit('setPlayers', players)

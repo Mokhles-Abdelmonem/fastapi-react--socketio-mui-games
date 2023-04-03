@@ -32,6 +32,7 @@ export default function Home() {
   
   useEffect(() => {
     const username = user.sub
+    socket.emit('update_joined', username, true);
     socket.emit('get_player', username, (player) => {
       if (player.in_room) {
         return history.push("/game_room");
