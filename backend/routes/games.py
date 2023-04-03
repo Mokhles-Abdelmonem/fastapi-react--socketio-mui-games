@@ -2,7 +2,8 @@ from fastapi import Depends, APIRouter
 from fastapi.responses import JSONResponse
 from models.games import MessageJson, RuleJson
 from utils.crud import * 
-from sockets.server import sio_server 
+from sockets.server import sio_server
+from sockets.utils import get_chat_messages
 
 games_router = APIRouter(
     prefix="/games",
@@ -12,20 +13,17 @@ games_router = APIRouter(
 
 
 @games_router.post("/message/")
-async def set_message(message: MessageJson, current_user: User = Depends(get_current_active_user)):
-    global messages
-
-    current_user.pop("_id", None)
-    current_user.pop("hashed_password", None)
-    messages.append(
-        {'sid': current_user['sid'],
-         'message': message.text,
-         'player': current_user,
-         'type': 'chat'
+async def set_message(message: MessageJson):
+    await msgs_collection.insert_one(
+        {
+        'message': message.text,
+        'username': "Api",
+        'type': 'chat'
          }
     )
-    await sio_server.emit('chat', messages, 'general_room')    
-    return {f"message from {current_user['username']}": message.text}
+    messages = await get_chat_messages()
+    await sio_server.emit('chat', messages, to='general_room')
+    return {f"message from Api": message.text}
 
 
 

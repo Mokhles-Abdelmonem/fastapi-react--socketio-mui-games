@@ -8,7 +8,7 @@ from passlib.context import CryptContext
 import re
 from schemas.user import ResponseModel, user_helper, ResponseUsersList
 from fastapi_jwt_auth import AuthJWT
-from config.db import users_collection, rule_collection, rooms_collection
+from config.db import users_collection, rule_collection, rooms_collection, msgs_collection
 from models.user import User
 
 
