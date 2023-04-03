@@ -20,7 +20,6 @@ function Header() {
   const history = useHistory();
   const logoutHandler = () => {
     socket.emit('get_player', username,(player) => {   
-      console.log('logged out', player)
       if(player.in_room){
         socket.emit('get_opponent', username, player.room_number, (opponent_name) => {   
           if(player.player_won || player.player_lost){

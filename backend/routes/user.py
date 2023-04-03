@@ -109,7 +109,7 @@ async def admin_delete_users(username , current_user: User = Depends(get_current
             await leave_room(sid, username, opponent_name)
         await sio_server.emit('logeUserOut', to=sid)
 
-    users_collection.delete_one({"username" : username})
+    await users_collection.delete_one({"username" : username})
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,

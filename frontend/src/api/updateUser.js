@@ -20,11 +20,9 @@ export async function updateUsers (username,level,disabled) {
             body: body
         });
         const res = await apiRes.json();
-        console.log("res",res);
         if (apiRes.status === 200) {
             return res;
         } else {
-            console.log('Error', apiRes.status, res);
             return apiRes.error
         }
     } catch(err) {

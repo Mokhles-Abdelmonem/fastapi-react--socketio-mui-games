@@ -20,7 +20,6 @@ export async function get_users() {
         if (res.status === 200) {
             return data;
         } else {
-            console.log('Error', res.status, res);
             return res.error
         }
     } catch(err) {

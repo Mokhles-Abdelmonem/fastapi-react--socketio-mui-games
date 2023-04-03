@@ -12,7 +12,6 @@ import Grid from '@mui/material/Grid';
 
 export default function UsersDrawer({users}) {
   const [selectedPlayer , SetSelectedPlayer] = useState('');
-  console.log("users FROM  DRAWER", users)
   const handleListItemClick = (event, username) => {
     SetSelectedPlayer(username);
   };

@@ -36,9 +36,7 @@ async def countdown_disconnected_user(user):
             }
             users_collection.update_one({"username" : username}, {"$set" : player_obj})
             users_collection.update_one({"username" : opponent_name}, {"$set" : player_obj})
-            print("DisConnected Player updated successfully in ", time)
         connected = player['connected']
-        print("DisConnected Player for ", time)
 
 
 def player_helper(player):
@@ -90,9 +88,7 @@ async def start_rps_game(player_name, room_number, opponent_name):
         g_time -= 1
         if g_time == -1:
             player_choise = game_res.get(player_name)
-            print("player_choise >>>>>>>>>> ", player_choise)
             opponent_choise = game_res.get(opponent_name)
-            print("opponent_choise >>>>>>> ", opponent_choise)
             if player_choise == None and opponent_choise == None:
                 await declare_draw(player_name, room_number, opponent_name)
             elif player_choise or player_choise == 0 :
@@ -106,7 +102,6 @@ async def countdown_x(player_name, room_number, opponent_name):
     while x_turn and x_time >= 0 and not winner and not draw:
         player = await users_collection.find_one({'username': player_name})
         opponent = await users_collection.find_one({'username': opponent_name})
-        print("countdown for player " + str(player_name) + str(x_time))
         await sio_server.sleep(1)
         mins, secs = divmod(x_time, 60)
         timer = '{:02d}:{:02d}'.format(mins, secs)
@@ -122,7 +117,6 @@ async def countdown_o(player_name, room_number, opponent_name):
     while not x_turn and o_time >= 0 and not winner and not draw:
         player = await users_collection.find_one({'username': player_name})
         opponent = await users_collection.find_one({'username': opponent_name})
-        print("countdown for player " + str(player_name) + str(o_time))
         await sio_server.sleep(1)
         mins, secs = divmod(o_time, 60)
         timer = '{:02d}:{:02d}'.format(mins, secs)

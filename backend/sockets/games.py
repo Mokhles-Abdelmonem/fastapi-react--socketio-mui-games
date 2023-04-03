@@ -92,7 +92,6 @@ async def player_logged_out(sid, username, opponent_name):
     if opponent_name:
         await users_collection.update_one({"username":opponent_name}, {"$set" : player_update})
     opponent = await users_collection.find_one({"username":opponent_name})
-    print("opponent >>>>>>>>>>>>>>>>>>>> ", opponent)
     players = await get_connected_players()
     await sio_server.emit('setPlayers', players)
 
@@ -200,7 +199,6 @@ async def join_room(sid, playerx, playero, game_type ,rule):
         "history": [None for i in range(9)],
         "rps_game": {},
         }
-    print("<<<<<<<<< (room in join room) >>>>>>>>>" , room)
 
     await rooms_collection.insert_one(room)
     players = await get_connected_players()
@@ -208,9 +206,7 @@ async def join_room(sid, playerx, playero, game_type ,rule):
     if game_type == 0:
         game_type_str = "Tic Tac Toe"
         sio_server.start_background_task(countdown_x, playerx, room_number, playero)
-        print("<<<<<<<<< (game_type in join room) >>>>>>>>>" , game_type)
     elif game_type == 1:
-        print("<<<<<<<<< (game_type in join room) >>>>>>>>>" , game_type)
         game_type_str = "Rock Paper Scissor"
         sio_server.start_background_task(start_rps_game , playerx, room_number, playero )
     await sio_server.emit('cofirmAccepted', game_type_str,  to=player_x['sid'])
@@ -315,7 +311,6 @@ async def rematch_game(sid, room_number):
 
 @sio_server.event
 async def player_left_room(sid, opponent_name):
-    print("player left room called test number 1 >>>>>>>>>>> ",opponent_name)
     opponent =  await users_collection.find_one({"username": opponent_name})
     await sio_server.emit('notePlayerLeft', to=opponent['sid'])
     players = await get_connected_players()

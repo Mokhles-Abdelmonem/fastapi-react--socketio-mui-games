@@ -33,14 +33,11 @@ export default function AdminSettings ({selectedPlayer}) {
 
     const handleDeletePlayer = async function(){
       document.getElementById(`${selectedPlayer}`).disabled = true;
-      console.log('delete player clicked')
       deleteUser(selectedPlayer).then((res) => {
         setAlertData(alertData =>({...alertData,...res,}))
       })
-      window.location.reload();
     };
     const onSubmit = async (values, actions) => {
-      console.log("values submitted to Admin", selectedPlayer, values);
       await new Promise((resolve) => setTimeout(resolve, 1000));
       actions.resetForm();
       
@@ -51,7 +48,6 @@ export default function AdminSettings ({selectedPlayer}) {
       ));
   }
 
-    {success && console.log(success);}
     return (
       <>
       {selectedPlayer ?

@@ -79,7 +79,6 @@ export default function Game() {
   }
 
   const handelRemach  = () => {
-    console.log('handelRemach called');
     socket.emit('rematch_game', Room);
   }
 
@@ -133,12 +132,10 @@ export default function Game() {
     });
 
     socket.emit('get_game', username ,(result) => {
-      console.log("result of getting the game", result);
       setGame(result);
     });
 
     socket.on('setTimer', (timer) => {
-      console.log('setTimer', timer)
       setTimer(timer);
     });
 

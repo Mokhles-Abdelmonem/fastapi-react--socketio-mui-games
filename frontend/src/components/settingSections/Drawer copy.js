@@ -29,7 +29,6 @@ export default function PLayersDrawer({avPlayers, username, socket}) {
                 onClick: () => {
                   const gamesButtons = gamesLables.map((game_type) => {
                     const index = gamesLables.indexOf(game_type)
-                    console.log("index of " + game_type + " is >>>>> " + index)
                     return {
                       label: `${game_type}`,
                       onClick: () => {

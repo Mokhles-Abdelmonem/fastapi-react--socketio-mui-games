@@ -51,8 +51,6 @@ const AcountSettings = () => {
     }
   }
 
-    {email && console.log(email);}
-    {success && console.log(success);}
     return (
       <Box
       sx={{

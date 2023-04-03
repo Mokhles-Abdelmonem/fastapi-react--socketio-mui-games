@@ -25,7 +25,7 @@ export default function Home() {
   const [players, setPlayers] = useState([]);
   const [player, setPlayer] = useState({});
   const [message, setMessage] = useState('');
-  const { user, socket } = useContext(AuthContext);
+  const { user, socket, logoutUser } = useContext(AuthContext);
   const history = useHistory();
   
 
@@ -174,6 +174,10 @@ export default function Home() {
 
     socket.on('declareWinner', (data) => {
       setMessages((prevMessages) => [...prevMessages, { ...data, type: 'winner'}]);
+    });
+
+    socket.on('logeUserOut',  ()  => {
+      logoutUser();
     });
 
     const hangingRequestPlayer = localStorage.getItem('hanging_request');
