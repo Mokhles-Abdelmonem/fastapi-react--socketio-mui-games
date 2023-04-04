@@ -1,6 +1,6 @@
 from .utils import * 
 from fastapi_jwt_auth import AuthJWT
-
+from .chess import base_board
 
 @sio_server.event
 async def connect(sid, environ, auth):
@@ -198,6 +198,8 @@ async def join_room(sid, playerx, playero, game_type ,rule):
         "game_type": game_type,
         "history": [None for i in range(9)],
         "rps_game": {},
+        "chess_board": base_board,
+        "chess_moves": 0
         }
 
     await rooms_collection.insert_one(room)
@@ -209,6 +211,8 @@ async def join_room(sid, playerx, playero, game_type ,rule):
     elif game_type == 1:
         game_type_str = "Rock Paper Scissor"
         sio_server.start_background_task(start_rps_game , playerx, room_number, playero )
+    elif game_type == 2:
+        game_type_str = "Chess"
     await sio_server.emit('cofirmAccepted', game_type_str,  to=player_x['sid'])
     await sio_server.emit('pushToRoom', to=room_number)
 

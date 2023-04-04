@@ -18,6 +18,7 @@ import Board from '../components/socket/Board';
 import Chat from '../components/socket/Chat';
 import RPSBoard from '../components/socket/RPSBoard';
 import Header from "../components/Header";
+import ChessBoard from "../components/socket/ChessBoard";
 
 
 
@@ -214,6 +215,12 @@ export default function Game() {
   }, []);
 
 
+  function getGameBoard(){
+    if (game === 0) return <Board squares={board} handleClick={handleClick}/>
+    if (game === 1) return <RPSBoard Clicked={Clicked} handleClick={handleRPSClick}/>
+    if (game === 2) return <ChessBoard socket={socket} username={username}/>
+  } 
+
   return (
     <div>
       {playerWon ? (    
@@ -318,18 +325,7 @@ export default function Game() {
                 <Container maxWidth="sm">
                   <Box sx={{ minHeight: '50vh' }}>
                     <div className='game'>
-                      {game === 1 ? (
-                        <RPSBoard
-                        Clicked={Clicked}
-                        handleClick={handleRPSClick}
-                        />
-                      ):(
-                        <Board
-                        squares={board}
-                        handleClick={handleClick}
-                        />
-                      ) }
-
+                      {getGameBoard()}
                     </div>
                   </Box>
 

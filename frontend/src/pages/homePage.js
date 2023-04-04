@@ -28,7 +28,11 @@ export default function Home() {
   const { user, socket, logoutUser } = useContext(AuthContext);
   const history = useHistory();
   
-
+  function getGameType(game_type){
+    if (game_type === 0) return "TicTacToe"
+    if (game_type === 1) return "Rock Paper Scissor"
+    if (game_type === 2) return "Chess"
+  }
   
   useEffect(() => {
     const username = user.sub
@@ -69,13 +73,7 @@ export default function Home() {
 
     socket.on('gameRequest', (data) => {
       localStorage.setItem('hanging_response', data.username_x)
-      let game_type 
-      if (data.game_type === 0){
-        game_type = "TicTacToe"
-      }else if (data.game_type === 1){
-        game_type = "Rock Paper Scissor"
-
-      }
+      const game_type = getGameType(data.game_type)
       confirmAlert({
         title: `Confirm ${game_type} game request`,
         message: `${data.username_x} Requesting a ${game_type} game `,
