@@ -1,8 +1,9 @@
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+import CircleIcon from '@mui/icons-material/Circle';
 
 
-export default function Square({ value, onSquareClick , chessGame=false}) {
+export default function Square({ value, onSquareClick , PieceHighlight, MovesHighlight, chessGame=false}) {
     
     let style={
         fontSize: 30,
@@ -14,7 +15,7 @@ export default function Square({ value, onSquareClick , chessGame=false}) {
     }
     let variant = "h2"
     
-    const color = value === 'X' ? 'primary' :
+    let color = value === 'X' ? 'primary' :
     value === 'O' ? 'error' : 'info';
 
     function getPieceValue(value) {
@@ -44,6 +45,15 @@ export default function Square({ value, onSquareClick , chessGame=false}) {
         }
         variant = "h4"
         value = getPieceValue(value);
+        const HighlightPiece = PieceHighlight()
+        const HighlightMoves = MovesHighlight()
+        if (HighlightMoves){
+            value = <CircleIcon sx={{fontSize:"20px"}}/>;
+        }
+        if (HighlightPiece){
+            color = "success";
+        }
+        
     }
     
     return (
