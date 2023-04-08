@@ -26,16 +26,17 @@ export default function ChessBoard({socket, username}) {
   }
 
   function handleClick(rowIndex, index, piece){
-    if (piece === " ") {
-      const highlClicked = highlightClicked(rowIndex, index)
-      if(highlClicked) {
-        console.log("HighlightMoves >>>>>>>>>> ",[rowIndex, index]  )
-      }
-      
-    };
+    const highlClicked = highlightClicked(rowIndex, index)
+    if(highlClicked) {
+      const initRowIndex = highlightPiece[0]
+      const initIndex = highlightPiece[1]
+      console.log("init Highlight Piece >>>>>>>>>> ",[initRowIndex, initIndex]  )
+      socket.emit("submit_piece_move", username, rowIndex, index, initRowIndex, initIndex)
+    }
     setHighlightPiece([]);
     setHighlightMoves([]);
     socket.emit("get_avalible_moves", username, rowIndex, index, piece, (result)=>{
+      console.log("current index >>>>>>>>>> ",rowIndex, index  )
       if (result){
         setHighlightPiece(result.highlightPiece);
         setHighlightMoves(result.avalible_moves);
@@ -73,7 +74,10 @@ export default function ChessBoard({socket, username}) {
             chessGame={true} 
             PieceHighlight={() => HighlightPiece(rowIndex, index)}
             MovesHighlight={() => HighlightMoves(rowIndex, index)}
-            onSquareClick={() => handleClick(rowIndex, index, piece)} />
+            onSquareClick={() => handleClick(rowIndex, index, piece)}
+            RowIndex={rowIndex} 
+            ColIndex={index} 
+            />
           ))
         ))
         }
@@ -91,6 +95,10 @@ export default function ChessBoard({socket, username}) {
 
     socket.emit('get_chess_board', username ,(result) => {
       setChessBoard(result);
+    });
+
+    socket.on('setChessBoard', (board) => {
+      setChessBoard(board);
     });
 
   }, []);

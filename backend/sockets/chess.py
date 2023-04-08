@@ -7,7 +7,7 @@ async def get_chess_board(sid, username):
         return room["chess_board"]
 
 @sio_server.event
-async def get_avalible_moves(sid, username, r_index, c_ndex, piece):
+async def get_avalible_moves(sid, username, r_index, c_index, piece):
     player = await users_collection.find_one({"username": username})
     room_number = player['room_number']
     room = await rooms_collection.find_one({"room_number": room_number})
@@ -17,9 +17,28 @@ async def get_avalible_moves(sid, username, r_index, c_ndex, piece):
     if not player_turn or not player_color:
         return False
     chess_board = room["chess_board"]
-    moves = avalible_moves(chess_board, r_index, c_ndex, piece)
-    return {"avalible_moves":moves, "highlightPiece":[r_index, c_ndex]}
-    move_valid = check_move_validation(chess_board, r_index, c_ndex, piece)
-    chess_moves += 1
-    rooms_collection.update_one({"room_number": room_number},{"$set": {"chess_moves":chess_moves}})
+    moves = avalible_moves(chess_board, r_index, c_index, piece)
+    return {"avalible_moves":moves, "highlightPiece":[r_index, c_index]}
 
+@sio_server.event
+async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, initial_c_index):
+    print("Sending piece move _______________ ")
+    player = await users_collection.find_one({"username": username})
+    room_number = player['room_number']
+    room = await rooms_collection.find_one({"room_number": room_number})
+    chess_board = room["chess_board"]
+
+    print("submited move >>>>>>>>> r, c", r_index, c_index)
+    piece = chess_board[initial_r_index][initial_c_index]
+    chess_board[r_index][c_index] = piece
+    chess_board[initial_r_index][initial_c_index] = " "
+    for row in chess_board :
+        print(row)
+    chess_moves = room["chess_moves"]
+    chess_moves += 1
+    room_update = {
+        "chess_moves":chess_moves,
+        "chess_board":chess_board
+    }
+    await sio_server.emit('setChessBoard', chess_board, to=room_number)
+    rooms_collection.update_one({"room_number": room_number},{"$set": room_update})
