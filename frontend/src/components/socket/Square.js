@@ -4,7 +4,6 @@ import CircleIcon from '@mui/icons-material/Circle';
 
 
 export default function Square({
-    
     value, 
     onSquareClick , 
     PieceHighlight, 
