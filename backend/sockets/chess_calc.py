@@ -5,8 +5,8 @@ mul = operator.mul
 div = operator.truediv
 
 def get_enemies_list(piece):
-    whitelist = ["R", "N", "B", "Q", "K", "P"]
-    blacklist = ["r", "n", "b", "q", "k", "p"]
+    whitelist = ["R", "N", "B", "Q", "P"]
+    blacklist = ["r", "n", "b", "q", "p"]
     if piece in whitelist :
         return blacklist
     else :
@@ -55,16 +55,16 @@ def pawn_avalible_moves(chess_board, r_index, c_index, piece):
 
 
 
-def rook_avalible_moves(chess_board, r_index, c_index, piece):
+def rook_avalible_moves(chess_board, r_index, c_index, piece, pass_king=False):
     enemies_list = get_enemies_list(piece)
     moves = []
-    enemies_king = "K" if piece == "r" else "k"
     if r_index + 1 < 8 :
         for index in range(r_index+1, 8):
             square = chess_board[index][c_index]
             if square != " ":
-                if square == enemies_king:
-                    continue
+                if pass_king:
+                    if square == pass_king:
+                        continue
                 if square in enemies_list :
                     moves.append((index, c_index))
                 break
@@ -74,10 +74,9 @@ def rook_avalible_moves(chess_board, r_index, c_index, piece):
         for index in range(r_index-1, -1, -1):
             square = chess_board[index][c_index]
             if square != " ":
-                print("[r_index][c_index] from rook attack >>>> ", [r_index, c_index])
-                print("square from rook attack >>>> ", square)
-                if square == enemies_king:
-                    continue
+                if pass_king:
+                    if square == pass_king:
+                        continue
                 if square in enemies_list :
                     moves.append((index, c_index))
                 break
@@ -87,8 +86,9 @@ def rook_avalible_moves(chess_board, r_index, c_index, piece):
         for index in range(c_index+1, 8):
             square = chess_board[r_index][index]
             if square != " ":
-                if square == enemies_king:
-                    continue
+                if pass_king:
+                    if square == pass_king:
+                        continue
                 if square in enemies_list :
                     moves.append((r_index, index))
                 break
@@ -98,8 +98,9 @@ def rook_avalible_moves(chess_board, r_index, c_index, piece):
         for index in range(c_index-1, -1, -1):
             square = chess_board[r_index][index]
             if square != " ":
-                if square == enemies_king:
-                    continue
+                if pass_king:
+                    if square == pass_king:
+                        continue
                 if square in enemies_list :
                     moves.append((r_index, index))
                 break
@@ -107,10 +108,9 @@ def rook_avalible_moves(chess_board, r_index, c_index, piece):
     return moves
 
 
-def bishop_avalible_moves(chess_board, r_index, c_index, piece):
+def bishop_avalible_moves(chess_board, r_index, c_index, piece, pass_king=False):
     enemies_list = get_enemies_list(piece)
     moves = []
-    enemies_king = "K" if piece == "b" else "k"
     pp_counter = 0
     for index in range(min([r_index, c_index])+1, 8):
         pp_counter += 1
@@ -120,7 +120,7 @@ def bishop_avalible_moves(chess_board, r_index, c_index, piece):
             break
         square = chess_board[temp_r_index][temp_c_index]
         if square != " ":
-            if square == enemies_king:
+            if square == pass_king:
                 continue
             if square in enemies_list :
                 moves.append((temp_r_index, temp_c_index))
@@ -136,7 +136,7 @@ def bishop_avalible_moves(chess_board, r_index, c_index, piece):
             break
         square = chess_board[temp_r_index][temp_c_index]
         if square != " ":
-            if square == enemies_king:
+            if square == pass_king:
                 continue
             if square in enemies_list :
                 moves.append((temp_r_index, temp_c_index))
@@ -152,7 +152,7 @@ def bishop_avalible_moves(chess_board, r_index, c_index, piece):
             break
         square = chess_board[temp_r_index][temp_c_index]
         if square != " ":
-            if square == enemies_king:
+            if square == pass_king:
                 continue
             if square in enemies_list :
                 moves.append((temp_r_index, temp_c_index))
@@ -168,7 +168,7 @@ def bishop_avalible_moves(chess_board, r_index, c_index, piece):
             break
         square = chess_board[temp_r_index][temp_c_index]
         if square != " ":
-            if square == enemies_king:
+            if square == pass_king:
                 continue
             if square in enemies_list :
                 moves.append((temp_r_index, temp_c_index))
@@ -189,47 +189,31 @@ def queen_avalible_moves(chess_board, r_index, c_index, piece):
 
 def knight_avalible_moves(chess_board, r_index, c_index, piece):
     enemies_list = get_enemies_list(piece)
+    enemies_king = "K" if piece == "n" else "k"
     moves = []
+    moveslist = [
+        [r_index+1, c_index+2],
+        [r_index-1, c_index+2],
+        [r_index+1, c_index-2],
+        [r_index-1, c_index-2],
+        [r_index+2, c_index+1],
+        [r_index+2, c_index-1],
+        [r_index-2, c_index+1],
+        [r_index-2, c_index-1]
+    ]
 
-    if c_index + 2 < 8:
-        if r_index < 7 :
-            square = chess_board[r_index+1][c_index+2]
-            if square == " " or square in enemies_list:
-                moves.append((r_index+1, c_index+2))
-        if r_index > 0 :
-            square = chess_board[r_index-1][c_index+2]
-            if square == " " or square in enemies_list:
-                moves.append((r_index-1, c_index+2))
-    if c_index - 2 > -1:
-        if r_index < 7 :
-            square = chess_board[r_index+1][c_index-2]
-            if square == " " or square in enemies_list:
-                moves.append((r_index+1, c_index-2))
-        if r_index > 0 :
-            square = chess_board[r_index-1][c_index-2]
-            if square == " " or square in enemies_list:
-                moves.append((r_index-1, c_index-2))
-
-    if r_index + 2 < 8:
-        if c_index < 7 :
-            square = chess_board[r_index+2][c_index+1]
-            if square == " " or square in enemies_list:
-                moves.append((r_index+2, c_index+1))
-        if c_index > 0 :
-            square = chess_board[r_index+2][c_index-1]
-            if square == " " or square in enemies_list:
-                moves.append((r_index+2, c_index-1))
-
-    if r_index - 2 > -1:
-        if c_index < 7 :
-            square = chess_board[r_index-2][c_index+1]
-            if square == " " or square in enemies_list:
-                moves.append((r_index-2, c_index+1))
-        if c_index > 0 :
-            square = chess_board[r_index-2][c_index-1]
-            if square == " " or square in enemies_list:
-                moves.append((r_index-2, c_index-1))
-
+    for cordinates in moveslist:
+        index_r = cordinates[0]
+        index_c = cordinates[1]
+        if index_r in range(0,8) and index_c in range(0,8):
+            square = chess_board[index_r][index_c]
+            if square == " ":
+                moves.append((index_r, index_c))
+            else:
+                if square == enemies_king:
+                    continue
+                if square in enemies_list :
+                    moves.append((index_r, index_c))
     return moves
 
 
@@ -259,45 +243,40 @@ def king_avalible_moves(chess_board, r_index, c_index, piece):
 
 
 def square_is_safe(chess_board, index_r, index_c, piece):
-    safe_from_pawns = is_safe_from_pawns(chess_board, index_r, index_c, piece)
-    if not safe_from_pawns :
-        return False
-    
-    safe_from_rooks = is_safe_from_rooks(chess_board, index_r, index_c, piece)
-    if not safe_from_rooks :
-        return False
-    
-    safe_from_bishop = is_safe_from_bishop(chess_board, index_r, index_c, piece)
-    if not safe_from_bishop :
-        return False
-    
-    safe_from_knight = is_safe_from_knight(chess_board, index_r, index_c, piece)
-    if not safe_from_knight :
-        return False
-    
+    functions = [
+        is_safe_from_pawns, 
+        is_safe_from_rooks, 
+        is_safe_from_bishop, 
+        is_safe_from_knight
+        ]
+    for fun in functions :
+        safe, _ = fun(chess_board, index_r, index_c, piece)
+        if not safe :
+            return False
     return True
     
 
 def is_safe_from_pawns(chess_board, r_index, c_index, piece):
-    enemies_list = get_enemies_list(piece)
     if piece == "K":
         threatlist = [
             [r_index-1, c_index+1],
             [r_index-1, c_index-1]
         ]
-    if piece == "k":
+        enemy_pawn = "p"
+    elif piece == "k":
         threatlist = [
             [r_index+1, c_index+1],
             [r_index+1, c_index-1]
         ]
+        enemy_pawn = "P"
     for cordinates in threatlist:
         index_r = cordinates[0]
         index_c = cordinates[1]
         if index_r in range(0,8) and index_c in range(0,8):
             square = chess_board[index_r][index_c]
-            if square in enemies_list:
-                return False
-    return True
+            if square == enemy_pawn:
+                return False, [index_r, index_c]
+    return True, None
 
 def is_safe_from_rooks(chess_board, r_index, c_index, piece):
     if piece == "K":
@@ -306,14 +285,14 @@ def is_safe_from_rooks(chess_board, r_index, c_index, piece):
     if piece == "k":
         rook_piece = "r"
         rook_queen = ["R", "Q"]
-    rook_moves = rook_avalible_moves(chess_board, r_index, c_index, rook_piece)
+    rook_moves = rook_avalible_moves(chess_board, r_index, c_index, rook_piece, pass_king=piece)
     for cordinates in rook_moves:
         index_r = cordinates[0]
         index_c = cordinates[1]
         square = chess_board[index_r][index_c]
         if square in rook_queen:
-            return False
-    return True
+            return False, [index_r, index_c]
+    return True, None
 
 def is_safe_from_bishop(chess_board, r_index, c_index, piece):
     if piece == "K":
@@ -322,14 +301,14 @@ def is_safe_from_bishop(chess_board, r_index, c_index, piece):
     if piece == "k":
         bishop_piece = "b"
         bishop_queen = ["B", "Q"]
-    bishop_moves = bishop_avalible_moves(chess_board, r_index, c_index, bishop_piece)
+    bishop_moves = bishop_avalible_moves(chess_board, r_index, c_index, bishop_piece, pass_king=piece)
     for cordinates in bishop_moves:
         index_r = cordinates[0]
         index_c = cordinates[1]
         square = chess_board[index_r][index_c]
         if square in bishop_queen:
-            return False
-    return True
+            return False, [index_r, index_c]
+    return True, None
 
 
 def is_safe_from_knight(chess_board, r_index, c_index, piece):
@@ -345,5 +324,37 @@ def is_safe_from_knight(chess_board, r_index, c_index, piece):
         index_c = cordinates[1]
         square = chess_board[index_r][index_c]
         if square == enemy_knight:
-            return False
-    return True
+            return False, [index_r, index_c]
+    return True, None
+
+
+
+
+def king_is_checked(chess_board, index_r, index_c, piece):
+    functions = [
+        is_safe_from_pawns, 
+        is_safe_from_rooks, 
+        is_safe_from_bishop, 
+        is_safe_from_knight
+        ]
+    counter = 0 
+    cordinates = None
+
+    for fun in functions :
+        safe, attacker_cordinates = fun(chess_board, index_r, index_c, piece)
+        if not safe :
+            counter += 1
+            if counter == 2:
+                avalible_moves =  king_avalible_moves(chess_board, index_r, index_c, piece)
+                print("check by two pieces")
+                print("avalible_moves", avalible_moves)
+                if not avalible_moves:
+                    print("<<<<<<<<<<<<<<<<<<<<<< King is Mate >>>>>>>>>>>>>>>>> ")
+            cordinates = attacker_cordinates
+    if cordinates:
+        save_the_king(chess_board, index_r, index_c, cordinates)
+        print("attacker cordinates is ", cordinates)
+    return True, False
+
+def save_the_king(chess_board, index_r, index_c, cordinates):
+    attack_piece = chess_board[cordinates[0]][cordinates[1]]

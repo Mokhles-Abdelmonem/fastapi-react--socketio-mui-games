@@ -199,7 +199,11 @@ async def join_room(sid, playerx, playero, game_type ,rule):
         "history": [None for i in range(9)],
         "rps_game": {},
         "chess_board": base_board,
-        "chess_moves": 0
+        "chess_moves": 0,
+        "black_king_position":[0,4],
+        "white_king_position":[7,4],
+        "check":False,
+        "mate": False
         }
 
     await rooms_collection.insert_one(room)
