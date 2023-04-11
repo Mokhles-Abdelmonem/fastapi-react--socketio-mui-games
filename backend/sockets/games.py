@@ -202,7 +202,8 @@ async def join_room(sid, playerx, playero, game_type ,rule):
         "chess_moves": 0,
         "black_king_position":[0,4],
         "white_king_position":[7,4],
-        "check":False,
+        "check":None,
+        "forced_moves":[],
         "mate": False
         }
 

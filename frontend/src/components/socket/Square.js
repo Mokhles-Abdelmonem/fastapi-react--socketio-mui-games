@@ -10,7 +10,8 @@ export default function Square({
     MovesHighlight, 
     chessGame=false,
     RowIndex,
-    ColIndex
+    ColIndex,
+    Check
     }) {
     
     let style={
@@ -22,23 +23,23 @@ export default function Square({
         minHeight: '140px'
     }
     let variant = "h2"
-    
-    let color = value === 'X' ? 'primary' :
-    value === 'O' ? 'error' : 'info';
+    let newValue = value
+    let color = newValue === 'X' ? 'primary' :
+    newValue === 'O' ? 'error' : 'info';
 
-    function getPieceValue(value) {
-        if (value === 'P') return <img src="https://img.icons8.com/ios/35/null/pawn.png"/>
-        if (value === 'p') return <img src="https://img.icons8.com/ios-filled/35/null/pawn.png"/>
-        if (value === 'R') return <img src="https://img.icons8.com/ios/35/null/rook.png"/>
-        if (value === 'r') return <img src="https://img.icons8.com/ios-filled/35/null/rook.png"/>
-        if (value === 'N') return <img src="https://img.icons8.com/ios/35/null/knight.png"/>
-        if (value === 'n') return <img src="https://img.icons8.com/ios-filled/35/null/knight.png"/>
-        if (value === 'B') return <img src="https://img.icons8.com/ios/35/null/bishop.png"/>
-        if (value === 'b') return <img src="https://img.icons8.com/ios-filled/35/null/bishop.png"/>
-        if (value === 'Q') return <img src="https://img.icons8.com/ios/35/null/queen.png"/>
-        if (value === 'q') return <img src="https://img.icons8.com/ios-filled/35/null/queen.png"/>
-        if (value === 'K') return <img src="https://img.icons8.com/ios/35/null/king.png"/>
-        if (value === 'k') return <img src="https://img.icons8.com/ios-filled/35/null/king.png"/>
+    function getPieceValue(newValue) {
+        if (newValue === 'P') return <img src="https://img.icons8.com/ios/35/null/pawn.png"/>
+        if (newValue === 'p') return <img src="https://img.icons8.com/ios-filled/35/null/pawn.png"/>
+        if (newValue === 'R') return <img src="https://img.icons8.com/ios/35/null/rook.png"/>
+        if (newValue === 'r') return <img src="https://img.icons8.com/ios-filled/35/null/rook.png"/>
+        if (newValue === 'N') return <img src="https://img.icons8.com/ios/35/null/knight.png"/>
+        if (newValue === 'n') return <img src="https://img.icons8.com/ios-filled/35/null/knight.png"/>
+        if (newValue === 'B') return <img src="https://img.icons8.com/ios/35/null/bishop.png"/>
+        if (newValue === 'b') return <img src="https://img.icons8.com/ios-filled/35/null/bishop.png"/>
+        if (newValue === 'Q') return <img src="https://img.icons8.com/ios/35/null/queen.png"/>
+        if (newValue === 'q') return <img src="https://img.icons8.com/ios-filled/35/null/queen.png"/>
+        if (newValue === 'K') return <img src="https://img.icons8.com/ios/35/null/king.png"/>
+        if (newValue === 'k') return <img src="https://img.icons8.com/ios-filled/35/null/king.png"/>
 
     }
     
@@ -52,7 +53,7 @@ export default function Square({
             minHeight: '50px'
         }
         variant = "h4"
-        value = getPieceValue(value);
+        newValue = getPieceValue(newValue);
         const HighlightPiece = PieceHighlight()
         const HighlightMoves = MovesHighlight()
         if ((RowIndex+ColIndex) % 2 !== 0) {
@@ -63,11 +64,16 @@ export default function Square({
             color = "success";
         }
         if (HighlightMoves){
-            if (value){
+            if (newValue){
                 color = "secondary";
             }else{
-                value = <CircleIcon sx={{fontSize:"20px"}}/>;
+                newValue = <CircleIcon sx={{fontSize:"20px"}}/>;
             }
+        }
+        if (Check){
+            if(value === Check){
+                color = "error";
+            } 
         }
     }
     
@@ -76,7 +82,7 @@ export default function Square({
         color={color}
         onClick={onSquareClick}>
             <Typography variant={variant}>
-                {value} 
+                {newValue} 
             </Typography>
         
     </Button>

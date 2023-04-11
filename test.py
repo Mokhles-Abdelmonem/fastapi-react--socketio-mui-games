@@ -33,4 +33,6 @@ def test4(counter, check=False):
     print(counter)
     if check :
         print("Check is True")
+    i = -1
+    print("the number", 1+i)
 test()

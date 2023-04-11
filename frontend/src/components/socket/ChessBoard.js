@@ -6,6 +6,7 @@ import { useHistory } from "react-router-dom";
 export default function ChessBoard({socket, username}) {
 
   const [board, setChessBoard] = useState([Array(9).fill(null)]);
+  const [Check, setCheck] = useState(null);
   const [highlightMoves, setHighlightMoves] = useState([]);
   const [highlightPiece, setHighlightPiece] = useState([]);
   const history = useHistory();
@@ -77,6 +78,7 @@ export default function ChessBoard({socket, username}) {
             onSquareClick={() => handleClick(rowIndex, index, piece)}
             RowIndex={rowIndex} 
             ColIndex={index} 
+            Check={Check}
             />
           ))
         ))
@@ -94,11 +96,16 @@ export default function ChessBoard({socket, username}) {
     });
 
     socket.emit('get_chess_board', username ,(result) => {
-      setChessBoard(result);
+      setChessBoard(result.chess_board);
+      setCheck(result.check);
     });
 
     socket.on('setChessBoard', (board) => {
       setChessBoard(board);
+    });
+
+    socket.on('setCheck', (King) => {
+      setCheck(King);
     });
 
   }, []);
