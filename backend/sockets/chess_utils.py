@@ -24,19 +24,19 @@ def get_player_color(room, piece, username):
 
 
 
-def avalible_moves(chess_board, r_index, c_ndex, piece):
+def available_moves(chess_board, r_index, c_ndex, piece):
     if piece in ["P", "p"]:
-        return pawn_avalible_moves(chess_board, r_index, c_ndex, piece)
+        return pawn_available_moves(chess_board, r_index, c_ndex, piece)
     if piece in ["R", "r"]:
-        return rook_avalible_moves(chess_board, r_index, c_ndex, piece)
+        return rook_available_moves(chess_board, r_index, c_ndex, piece)
     if piece in ["B", "b"]:
-        return bishop_avalible_moves(chess_board, r_index, c_ndex, piece)
+        return bishop_available_moves(chess_board, r_index, c_ndex, piece)
     if piece in ["Q", "q"]:
-        return queen_avalible_moves(chess_board, r_index, c_ndex, piece)
+        return queen_available_moves(chess_board, r_index, c_ndex, piece)
     if piece in ["N", "n"]:
-        return knight_avalible_moves(chess_board, r_index, c_ndex, piece)
+        return knight_available_moves(chess_board, r_index, c_ndex, piece)
     if piece in ["K", "k"]:
-        return king_avalible_moves(chess_board, r_index, c_ndex, piece)
+        return king_available_moves(chess_board, r_index, c_ndex, piece)
     return False
 
 

@@ -36,11 +36,11 @@ export default function ChessBoard({socket, username}) {
     }
     setHighlightPiece([]);
     setHighlightMoves([]);
-    socket.emit("get_avalible_moves", username, rowIndex, index, piece, (result)=>{
+    socket.emit("get_available_moves", username, rowIndex, index, piece, (result)=>{
       console.log("current index >>>>>>>>>> ",rowIndex, index  )
       if (result){
         setHighlightPiece(result.highlightPiece);
-        setHighlightMoves(result.avalible_moves);
+        setHighlightMoves(result.available_moves);
       }
     })
   };

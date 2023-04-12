@@ -35,4 +35,11 @@ def test4(counter, check=False):
         print("Check is True")
     i = -1
     print("the number", 1+i)
+    list_set = [(1, 4), (1, 3)]
+    if [1, 4] in list_set:
+        print("the number in the list")
+    lists = ["R", "N", "B", "Q", "P"]
+    lists.remove("r")
+    print(lists)
+
 test()
