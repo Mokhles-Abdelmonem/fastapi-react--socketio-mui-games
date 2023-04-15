@@ -215,9 +215,40 @@ def knight_available_moves(chess_board, r_index, c_index, piece):
                     moves.append([index_r, index_c])
     return moves
 
+def king_casel_moves(chess_board, r_index, c_index, piece):
+    moves = []
+    rook_0_next_square = [
+        [r_index, 1],
+        [r_index, 2],
+        [r_index, 3]
+    ]
+    rook_7_next_square = [
+        [r_index, 5],
+        [r_index, 6]
+    ]
 
-def king_available_moves(chess_board, r_index, c_index, piece):
+    rook_0_ready_to_casel = rook_ready_to_casel(chess_board, rook_0_next_square, piece)
+    rook_7_ready_to_casel = rook_ready_to_casel(chess_board, rook_7_next_square, piece)
+    
+    if rook_0_ready_to_casel :
+        moves.append([r_index, 2])
+    if rook_7_ready_to_casel :
+        moves.append([r_index, 6])
+    return moves
+
+def rook_ready_to_casel(chess_board, next_square, piece):
+    for cordinate in next_square :
+        index_r = cordinate[0]
+        index_c = cordinate[1]
+        square = chess_board[index_r][index_c]
+        square_safe = square_is_safe(chess_board, index_r, index_c, piece)
+        if square != " " or not square_safe:
+            return False
+    return True
+
+def king_available_moves(chess_board, r_index, c_index, piece, casel_context=None):
     pawns_king = "p" if piece == "k" else "P"
+    rook = "r" if piece == "k" else "R"
     enemies_list = get_enemies_list(pawns_king)
     moves = []
     moveslist = [
@@ -239,6 +270,15 @@ def king_available_moves(chess_board, r_index, c_index, piece):
                 if square_is_safe(chess_board, index_r, index_c, piece):
                     moves.append([index_r, index_c])
 
+    if casel_context:
+        check = casel_context["check"]
+        King_moved = casel_context[f"{piece}_moved"]
+        Rook_0_moved = casel_context[f"{rook}_0_moved"]
+        Rook_7_moved = casel_context[f"{rook}_7_moved"]
+        if not King_moved and (not Rook_0_moved or not Rook_7_moved) and not check:
+            casel_moves = king_casel_moves(chess_board, r_index, c_index, piece)
+            print("casel moves >>>>>>>>>>>>>>>>> ", casel_moves)
+            moves = moves + casel_moves
     return moves
 
 
@@ -467,7 +507,6 @@ def piece_is_pinned_rook(chess_board, r_index, c_index, enemies_list, king_posit
                         else:
                             return False, None
                     pinned_moves.append([r_index, index_c])
-            print(" in column direction king on the ((left)) side of the piece")
         else:
             for index_c in range(king_position[1]-1, c_index, -1):
                 square = chess_board[r_index][index_c]
@@ -484,7 +523,6 @@ def piece_is_pinned_rook(chess_board, r_index, c_index, enemies_list, king_posit
                         else:
                             return False, None
                     pinned_moves.append([r_index, index_c])
-            print(" in column direction king on the ((right)) side of the piece")
     elif c_index == king_position[1] :
         if r_index > king_position[0] :
             for index_r in range(king_position[0]+1, r_index):
@@ -524,74 +562,77 @@ def piece_is_pinned_rook(chess_board, r_index, c_index, enemies_list, king_posit
 def piece_is_pinned_bishop(chess_board, r_index, c_index, enemies_list, king_position):
     if ((r_index-king_position[0])**2 != (c_index-king_position[1])**2):
         return False, None
-    print(" piece in a pishop posision for the king")
     bishop_queen_list = ["B", "Q", "b", "q"]
     pinned_moves = []
     counter = 0
     min_range = min([king_position[1], c_index])
-    max_range = max([king_position[1], c_index])-1
-    closest_edge_r = min([r_index, 7-r_index]) 
-    closest_edge_c = min([c_index, 7-c_index]) 
-    the_range = min([closest_edge_r, closest_edge_c])
+    max_range = max([king_position[1], c_index])
     for _ in range(min_range, max_range):
         counter += 1
         if r_index > king_position[0]:
             if c_index > king_position[1]:
                 # piece is + + to king
-                index_r = king_position[0] + counter
-                index_c = king_position[1] + counter
-                square = chess_board[index_r][index_c]
-                if square != " ":
-                    return False, None
-                pinned_moves.append([index_r, index_c])
-                print(" the_range >>>>>>>.  ", the_range) 
                 r_operator = operator.add
                 c_operator = operator.add
-            else:
-                # piece is + - to king 
                 index_r = king_position[0] + counter
-                index_c = king_position[1] - counter
+                index_c = king_position[1] + counter
+                if r_index == index_r and c_index == index_c :
+                    continue
                 square = chess_board[index_r][index_c]
                 if square != " ":
                     return False, None
                 pinned_moves.append([index_r, index_c])
+            else:
+                # piece is + - to king 
                 r_operator = operator.add
                 c_operator = operator.sub
+                index_r = king_position[0] + counter
+                index_c = king_position[1] - counter
+                if r_index == index_r and c_index == index_c :
+                    continue
+                square = chess_board[index_r][index_c]
+                if square != " ":
+                    return False, None
+                pinned_moves.append([index_r, index_c])
         else:
             if c_index > king_position[1]:
                 # piece is - + to king 
+                r_operator = operator.sub
+                c_operator = operator.add
                 index_r = king_position[0] - counter
                 index_c = king_position[1] + counter
+                if r_index == index_r and c_index == index_c :
+                    continue
                 square = chess_board[index_r][index_c]
                 if square != " ":
                     return False, None
                 pinned_moves.append([index_r, index_c])
-                r_operator = operator.sub
-                c_operator = operator.add
             else:
                 # piece is - - to king
                 index_r = king_position[0] - counter
                 index_c = king_position[1] - counter
+                r_operator = operator.sub
+                c_operator = operator.sub
+                if r_index == index_r and c_index == index_c :
+                    continue    
                 square = chess_board[index_r][index_c]
                 if square != " ":
                     return False, None
                 pinned_moves.append([index_r, index_c])
-                r_operator = operator.sub
-                c_operator = operator.sub
 
     new_counter = 0
-    for _ in range(the_range):
+    while True:
         new_counter += 1
-        # local variable 'r_operator' referenced before assignment
         index_r = r_operator(r_index, new_counter)
         index_c = c_operator(c_index, new_counter)
-        print (" the index rrr is ", index_r, " and the index ccc is ", index_c)
-        square = chess_board[index_r][index_c]
-        if square != " ":
-            if square in enemies_list and square in bishop_queen_list:
-                pinned_moves.append([index_r, c_index])
-                return True, pinned_moves
-            else:
-                return False, None
-        pinned_moves.append([index_r, c_index])
-    return False, None
+        if index_r in range(0, 8) and index_c in range(0, 8):
+            square = chess_board[index_r][index_c]
+            if square != " ":
+                if square in enemies_list and square in bishop_queen_list:
+                    pinned_moves.append([index_r, index_c])
+                    return True, pinned_moves
+                else:
+                    return False, None
+            pinned_moves.append([index_r, index_c])
+        else:
+            return  False, None

@@ -5,7 +5,8 @@ def test():
         counter += 1
         fun(counter , check=False)
 
-
+    for i in range(1,2):
+        print("counter would be adfsdfsdfsdfd" )
         
 def test1(counter, check=False):
     print("Test number")
@@ -29,17 +30,9 @@ def test3(counter, check=False):
 
         
 def test4(counter, check=False):
-    print("Test number")
-    print(counter)
-    if check :
-        print("Check is True")
-    i = -1
-    print("the number", 1+i)
-    list_set = [(1, 4), (1, 3)]
-    if [1, 4] in list_set:
-        print("the number in the list")
-    lists = ["R", "N", "B", "Q", "P"]
-    lists.remove("r")
-    print(lists)
+
+    list1 = ["R", "N", "B", "Q", "P"]
+    list2 = ["S",]
+    print(list(set(list1)-set(list2)))
 
 test()

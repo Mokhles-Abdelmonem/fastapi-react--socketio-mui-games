@@ -204,7 +204,13 @@ async def join_room(sid, playerx, playero, game_type ,rule):
         "white_king_position":[7,4],
         "check":None,
         "forced_moves":[],
-        "mate": False
+        "mate": False,
+        "K_moved" : False,
+        "k_moved" : False,
+        "R_0_moved" : False,
+        "r_0_moved" : False,
+        "R_7_moved" : False,
+        "r_7_moved" : False
         }
 
     await rooms_collection.insert_one(room)
