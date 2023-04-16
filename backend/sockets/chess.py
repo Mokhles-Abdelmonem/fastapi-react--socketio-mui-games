@@ -27,7 +27,13 @@ async def get_available_moves(sid, username, r_index, c_index, piece):
     "R_7_moved" : room["R_7_moved"],
     "r_7_moved" : room["r_7_moved"]
     }
-    moves = available_moves(chess_board, r_index, c_index, piece, casel_context)
+
+    passent_context = {
+    "en_passant" : room["en_passant"],
+    "en_passant_to" : room["en_passant_to"]
+    }
+
+    moves = available_moves(chess_board, r_index, c_index, piece, casel_context, passent_context)
     if piece not in ['K', 'k']:
         enemies_list = get_enemies_list(piece)
         if "p" in enemies_list:
@@ -36,14 +42,12 @@ async def get_available_moves(sid, username, r_index, c_index, piece):
             king_position = room["black_king_position"]
 
         pinned, pinned_moves = check_piece_is_pinned(chess_board, r_index, c_index, piece, king_position)
-        if pinned :
+        if pinned and moves :
             aval_moves = []
             for move in pinned_moves :
                 if move in moves :
                     aval_moves.append(move)
             moves = aval_moves
-            print("moves after applying pinned are >>>>>>>> ", moves)
-            print("pinned_moves moves are >>>>>>>> ", pinned_moves)
         forced_moves = room["forced_moves"]
         if forced_moves and moves:
             new_moves = []
@@ -51,7 +55,9 @@ async def get_available_moves(sid, username, r_index, c_index, piece):
                 if move in moves :
                     new_moves.append(move)
             moves = new_moves
-            print("new_moves moves are >>>>>>>> ", new_moves)
+        check = room["check"]
+        if check and not forced_moves :
+            moves = []
     return {"available_moves":moves, "highlightPiece":[r_index, c_index]}
 
 @sio_server.event
@@ -69,8 +75,11 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
         "check":None,
     }
     if piece == "K":
-        right_square = chess_board[r_index][c_index+1]
-        left_square = chess_board[r_index][c_index-2]
+        right_square = None 
+        left_square = None
+        if c_index in range(2, 7) :
+            right_square = chess_board[r_index][c_index+1]
+            left_square = chess_board[r_index][c_index-2]
         K_moved = room["K_moved"]
         if not K_moved and (right_square == "R" or left_square == "R"):
             chess_board[initial_r_index][initial_c_index] = " "
@@ -82,12 +91,18 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
                 chess_board[r_index][7] = " "
                 chess_board[r_index][6] = "K"
                 chess_board[r_index][5] = "R"
+        else:
+            chess_board[r_index][c_index] = piece
+            chess_board[initial_r_index][initial_c_index] = " "
         room_update["white_king_position"] = [r_index, c_index]
         room_update["K_moved"] = True
         await sio_server.emit('setCheck', None, to=room_number)
     elif piece == "k":
-        right_square = chess_board[r_index][c_index+1]
-        left_square = chess_board[r_index][c_index-2]
+        right_square = None 
+        left_square = None
+        if c_index in range(2, 7) :
+            right_square = chess_board[r_index][c_index+1]
+            left_square = chess_board[r_index][c_index-2]
         k_moved = room["k_moved"]
         if not k_moved and (right_square == "r" or left_square == "r"):
             chess_board[initial_r_index][initial_c_index] = " "
@@ -99,6 +114,9 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
                 chess_board[r_index][7] = " "
                 chess_board[r_index][6] = "k"
                 chess_board[r_index][5] = "r"
+        else:
+            chess_board[r_index][c_index] = piece
+            chess_board[initial_r_index][initial_c_index] = " "
         room_update["black_king_position"] = [r_index, c_index]
         room_update["k_moved"] = True
         await sio_server.emit('setCheck', None, to=room_number)
@@ -128,7 +146,46 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
                 room_update["r_0_moved"] = True
             elif initial_r_index == 7: 
                 room_update["r_7_moved"] = True
-        
+
+
+        en_passant_list = []
+        en_passant_to = []
+        en_passant_to = room["en_passant_to"]
+        if piece == "P" :
+            if [r_index, c_index] == en_passant_to:
+                chess_board[r_index+1][c_index] = " "
+            if initial_r_index - r_index == 2:
+                if c_index > 0 :
+                    left_square = chess_board[r_index][c_index-1]
+                    if left_square == "p" :
+                        en_passant_list.append([r_index, c_index-1])
+                    en_passant_to = [r_index+1, c_index]
+                if c_index < 7 :
+                    right_square = chess_board[r_index][c_index+1]
+                    if right_square == "p" :
+                        en_passant_list.append([r_index, c_index+1])
+                    en_passant_to = [r_index+1, c_index]
+            if r_index == 0:
+                chess_board[r_index][c_index] = "Q"
+        elif piece == "p":
+            if [r_index, c_index] == en_passant_to:
+                chess_board[r_index-1][c_index] = " "
+            if r_index - initial_r_index == 2:
+                if c_index > 0 :
+                    left_square = chess_board[r_index][c_index-1]
+                    if left_square == "P" :
+                        en_passant_list.append([r_index, c_index-1])
+                    en_passant_to = [r_index-1, c_index]
+                if c_index < 7 :
+                    right_square = chess_board[r_index][c_index+1]
+                    if right_square == "P" :
+                        en_passant_list.append([r_index, c_index+1])
+                    en_passant_to = [r_index-1, c_index]
+            if r_index == 7:
+                chess_board[r_index][c_index] = "q"
+        room_update["en_passant"] = en_passant_list 
+        room_update["en_passant_to"] = en_passant_to 
+
         index_r = king_position[0]
         index_c = king_position[1]
         check, available_moves , forced_moves = king_is_checked(chess_board, index_r, index_c, the_king)   
@@ -143,7 +200,7 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
                 opponent_name = room[opponent]
                 player = await users_collection.find_one({'username': player_name})
                 opponent = await users_collection.find_one({'username': opponent_name})
-                await declare_winner(opponent, player, room)
+                await declare_winner(opponent ,player , room)
         else:
             await sio_server.emit('setCheck', None, to=room_number)
 

@@ -210,7 +210,9 @@ async def join_room(sid, playerx, playero, game_type ,rule):
         "R_0_moved" : False,
         "r_0_moved" : False,
         "R_7_moved" : False,
-        "r_7_moved" : False
+        "r_7_moved" : False,
+        "en_passant" :[],
+        "en_passant_to" :[],
         }
 
     await rooms_collection.insert_one(room)

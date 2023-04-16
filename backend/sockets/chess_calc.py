@@ -12,12 +12,13 @@ def get_enemies_list(piece):
         return whitelist
 
 
-def pawn_available_moves(chess_board, r_index, c_index, piece):
+def pawn_available_moves(chess_board, r_index, c_index, piece, passent_context):
     enemies_list = get_enemies_list(piece)
     moves = []
     if piece == "P":
         moveslist = [[r_index-1, c_index]]
-        if r_index == 6:
+        front_square = chess_board[r_index-1][c_index]
+        if r_index == 6 and front_square == " ":
             moveslist.append([r_index-2, c_index])
         eatlist = [
             [r_index-1, c_index+1],
@@ -25,7 +26,8 @@ def pawn_available_moves(chess_board, r_index, c_index, piece):
         ]
     if piece == "p":
         moveslist = [[r_index+1, c_index]]
-        if r_index == 1:
+        front_square = chess_board[r_index+1][c_index]
+        if r_index == 1 and front_square == " ":
             moveslist.append([r_index+2, c_index])
         eatlist = [
             [r_index+1, c_index+1],
@@ -50,6 +52,10 @@ def pawn_available_moves(chess_board, r_index, c_index, piece):
                 continue
             if square in enemies_list:
                 moves.append([index_r, index_c])
+    en_passant =  passent_context["en_passant"]
+    en_passant_to =  passent_context["en_passant_to"]
+    if [r_index, c_index] in en_passant:
+        moves.append(en_passant_to)
     return moves
 
 
@@ -215,7 +221,7 @@ def knight_available_moves(chess_board, r_index, c_index, piece):
                     moves.append([index_r, index_c])
     return moves
 
-def king_casel_moves(chess_board, r_index, c_index, piece):
+def king_castle_moves(chess_board, r_index, c_index, piece):
     moves = []
     rook_0_next_square = [
         [r_index, 1],
@@ -227,26 +233,27 @@ def king_casel_moves(chess_board, r_index, c_index, piece):
         [r_index, 6]
     ]
 
-    rook_0_ready_to_casel = rook_ready_to_casel(chess_board, rook_0_next_square, piece)
-    rook_7_ready_to_casel = rook_ready_to_casel(chess_board, rook_7_next_square, piece)
+    rook_0_ready_to_castle = rook_ready_to_castle(chess_board, rook_0_next_square, 0, piece)
+    rook_7_ready_to_castle = rook_ready_to_castle(chess_board, rook_7_next_square, 7, piece)
     
-    if rook_0_ready_to_casel :
+    if rook_0_ready_to_castle :
         moves.append([r_index, 2])
-    if rook_7_ready_to_casel :
+    if rook_7_ready_to_castle :
         moves.append([r_index, 6])
     return moves
 
-def rook_ready_to_casel(chess_board, next_square, piece):
+def rook_ready_to_castle(chess_board, next_square, rook_c_index, piece):
     for cordinate in next_square :
         index_r = cordinate[0]
         index_c = cordinate[1]
         square = chess_board[index_r][index_c]
         square_safe = square_is_safe(chess_board, index_r, index_c, piece)
-        if square != " " or not square_safe:
+        rook_square_safe = square_is_safe(chess_board, index_r, rook_c_index, piece)
+        if square != " " or not square_safe or not rook_square_safe:
             return False
     return True
 
-def king_available_moves(chess_board, r_index, c_index, piece, casel_context=None):
+def king_available_moves(chess_board, r_index, c_index, piece, castle_context=None):
     pawns_king = "p" if piece == "k" else "P"
     rook = "r" if piece == "k" else "R"
     enemies_list = get_enemies_list(pawns_king)
@@ -270,15 +277,14 @@ def king_available_moves(chess_board, r_index, c_index, piece, casel_context=Non
                 if square_is_safe(chess_board, index_r, index_c, piece):
                     moves.append([index_r, index_c])
 
-    if casel_context:
-        check = casel_context["check"]
-        King_moved = casel_context[f"{piece}_moved"]
-        Rook_0_moved = casel_context[f"{rook}_0_moved"]
-        Rook_7_moved = casel_context[f"{rook}_7_moved"]
+    if castle_context:
+        check = castle_context["check"]
+        King_moved = castle_context[f"{piece}_moved"]
+        Rook_0_moved = castle_context[f"{rook}_0_moved"]
+        Rook_7_moved = castle_context[f"{rook}_7_moved"]
         if not King_moved and (not Rook_0_moved or not Rook_7_moved) and not check:
-            casel_moves = king_casel_moves(chess_board, r_index, c_index, piece)
-            print("casel moves >>>>>>>>>>>>>>>>> ", casel_moves)
-            moves = moves + casel_moves
+            castle_moves = king_castle_moves(chess_board, r_index, c_index, piece)
+            moves = moves + castle_moves
     return moves
 
 
@@ -287,7 +293,8 @@ def square_is_safe(chess_board, index_r, index_c, piece):
         is_safe_from_pawns, 
         is_safe_from_rooks, 
         is_safe_from_bishop, 
-        is_safe_from_knight
+        is_safe_from_knight,
+        is_safe_from_king
         ]
     for fun in functions :
         safe, _ = fun(chess_board, index_r, index_c, piece)
@@ -367,6 +374,30 @@ def is_safe_from_knight(chess_board, r_index, c_index, piece):
             return False, [index_r, index_c]
     return True, None
 
+
+def is_safe_from_king(chess_board, r_index, c_index, piece):
+    moveslist = [
+        [r_index+1, c_index],
+        [r_index+1, c_index+1],
+        [r_index+1, c_index-1],
+        [r_index-1, c_index],
+        [r_index-1, c_index+1],
+        [r_index-1, c_index-1],
+        [r_index, c_index+1],
+        [r_index, c_index-1]
+    ]
+    if piece == "K":
+        enemy_king = "k"
+    elif piece == "k":
+        enemy_king = "K"
+    for cordinates in moveslist:
+        index_r = cordinates[0]
+        index_c = cordinates[1]
+        if index_r in range(0,8) and index_c in range(0,8):
+            square = chess_board[index_r][index_c]
+            if square == enemy_king:
+                return False, [index_r, index_c]
+    return True, None
 
 
 
@@ -449,7 +480,9 @@ def check_square_safety(chess_board, index_r, index_c, piece):
         is_safe_from_bishop, 
         is_safe_from_knight
         ]
+    counter = 0  
     for fun in functions :
+        counter += 1
         safe, _ = fun(chess_board, index_r, index_c, piece)
         if not safe :
             return False
@@ -458,19 +491,24 @@ def check_square_safety(chess_board, index_r, index_c, piece):
 
 def can_pawns_defend(chess_board, r_index, c_index, piece):
     moves = []
+    square  = chess_board[r_index][c_index]
+    if square != " ":
+        return True, None
     if piece == "K":
-        if chess_board[r_index-1][c_index] == "p":
-            moves.append([r_index-1, c_index])
-            return False, None
+        if r_index > 0:
+            if chess_board[r_index-1][c_index] == "p":
+                moves.append([r_index-1, c_index])
+                return False, None
         if r_index-2 == 1:
             if chess_board[r_index-2][c_index] == "p":
                 moves.append([r_index-2, c_index])
                 return False, None
 
     elif piece == "k":
-        if chess_board[r_index+1][c_index] == "P":
-            moves.append([r_index+1, c_index])
-            return False, None
+        if r_index < 7:
+            if chess_board[r_index+1][c_index] == "P":
+                moves.append([r_index+1, c_index])
+                return False, None
         if r_index+2 == 6:
             if chess_board[r_index+2][c_index] == "P":
                 moves.append([r_index+2, c_index])
