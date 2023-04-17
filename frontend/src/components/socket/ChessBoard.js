@@ -104,6 +104,13 @@ export default function ChessBoard({socket, username}) {
       setChessBoard(board);
     });
 
+    socket.on('rematchGame', () => {
+      socket.emit('get_chess_board', username ,(result) => {
+        setChessBoard(result.chess_board);
+        setCheck(result.check);
+      });
+    });
+
     socket.on('setCheck', (King) => {
       setCheck(King);
     });

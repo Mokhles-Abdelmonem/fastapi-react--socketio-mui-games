@@ -66,7 +66,7 @@ async def get_chat_messages():
 async def retrieve_rules():
     rules = []
     async for rule in rule_collection.find():
-        rules.append(rule["winning_number"])
+        rules.append({"rule" : rule["winning_number"], "timer": rule["timer"]})
     return rules
 
 
@@ -160,7 +160,6 @@ async def declare_winner(winner, opponent, room):
     rooms_collection.update_one({"room_number" : room_number}, {"$set" : {"winner": winner["username"]}})
     users_collection.update_one({"username" : winner["username"]}, {"$set" : winner})
     users_collection.update_one({"username" : opponent["username"]}, {"$set" : opponent})
-    print(" declare winner called the winner is " + winner["username"] + " and his oppenent is " + opponent["username"])
     await sio_server.emit('declareWinner', {'winner': winner["username"], 'roomNumber':room_number})
     await sio_server.emit('congrateWinner', winner['level'], to=winner['sid'])
     await sio_server.emit('noteOpponent', opponent['level'] , to=opponent['sid'])

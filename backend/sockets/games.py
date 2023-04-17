@@ -132,11 +132,12 @@ async def get_rules(sid):
 
 
 @sio_server.event
-async def game_request(sid,  username_x, username_o, rule, game_type):
+async def game_request(sid,  username_x, username_o, rule, timer, game_type):
     context = {
         "username_x":username_x,
         "username_o":username_o,
         "rule":rule,
+        "timer":timer,
         "game_type":game_type
         }
     player = await users_collection.find_one({"username":username_o})
@@ -158,7 +159,7 @@ async def cancel_request(sid,  username):
 
 
 @sio_server.event
-async def join_room(sid, playerx, playero, game_type ,rule):
+async def join_room(sid, playerx, playero, game_type ,rule, timer):
     room_number = "1"
     rooms = rooms_collection.find(sort=[( '_id', -1 )]).limit(1)
     rooms = await rooms.to_list(None)
@@ -190,8 +191,8 @@ async def join_room(sid, playerx, playero, game_type ,rule):
         "player_o": playero,
         "winner": None,
         "draw": False,
-        "x_time":15,
-        "o_time":15,
+        "x_time":timer,
+        "o_time":timer,
         "x_turn":True,
         "msgs": [],
         "rule": rule,
@@ -226,6 +227,7 @@ async def join_room(sid, playerx, playero, game_type ,rule):
         sio_server.start_background_task(start_rps_game , playerx, room_number, playero )
     elif game_type == 2:
         game_type_str = "Chess"
+        sio_server.start_background_task(countdown_x, playerx, room_number, playero)
     await sio_server.emit('cofirmAccepted', game_type_str,  to=player_x['sid'])
     await sio_server.emit('pushToRoom', to=room_number)
 
@@ -299,6 +301,8 @@ async def handle_click(sid, i, username):
 
 @sio_server.event
 async def rematch_game(sid, room_number):
+    room = await rooms_collection.find_one({"room_number": room_number})
+    timer = room["x_time"]
     player_update = {
         "player_won" : False,
         "player_lost" : False,
@@ -307,19 +311,33 @@ async def rematch_game(sid, room_number):
     room_update = {
         "winner": None,
         "draw": False,
-        "x_time":15,
-        "o_time":15,
+        "x_time":timer,
+        "o_time":timer,
         "x_turn":True,
         "history": [None for i in range(9)],
         "rps_game": {},
+        "chess_board": base_board,
+        "chess_moves": 0,
+        "black_king_position":[0,4],
+        "white_king_position":[7,4],
+        "check":None,
+        "forced_moves":[],
+        "mate": False,
+        "K_moved" : False,
+        "k_moved" : False,
+        "R_0_moved" : False,
+        "r_0_moved" : False,
+        "R_7_moved" : False,
+        "r_7_moved" : False,
+        "en_passant" :[],
+        "en_passant_to" :[],
         }
-    room = await rooms_collection.find_one({"room_number": room_number})
     player_o = room["player_o"]
     player_x = room["player_x"]
     users_collection.update_one({"username" : player_x}, {"$set" : player_update})
     users_collection.update_one({"username" : player_o}, {"$set" : player_update})
     rooms_collection.update_one({"room_number": room_number}, {"$set" : room_update})
-    if room["game_type"] == 0:
+    if room["game_type"] in [0, 2]:
         sio_server.start_background_task(countdown_x, player_x, room_number, player_o)
     if room["game_type"] == 1:
         sio_server.start_background_task(start_rps_game, player_x, room_number, player_o)

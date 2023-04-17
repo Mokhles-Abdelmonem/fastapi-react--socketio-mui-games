@@ -16,3 +16,9 @@ class RuleJson(BaseRuleJson):
     """
     """
     rules: list[list[int]] 
+
+
+class BoardJson(BaseModel):
+    """
+    """
+    board: list[list[str]] 

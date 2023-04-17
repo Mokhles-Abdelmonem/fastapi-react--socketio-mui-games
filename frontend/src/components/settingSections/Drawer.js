@@ -22,9 +22,9 @@ export default function PLayersDrawer({avPlayers, username, socket}) {
         socket.emit('get_rules',(rules) => {
           const buttons = rules.map((rule) => {
             return {
-              label: `${rule} rule`,
+              label: `${rule.rule} rule ${rule.timer} sec`,
               onClick: () => {
-                socket.emit('game_request', username, targetPlayer, rule, gameType,  () => {
+                socket.emit('game_request', username, targetPlayer, rule.rule, rule.timer, gameType,  () => {
                   localStorage.setItem('hanging_request', targetPlayer)
                   confirmAlert({
                     title: 'Confirm game request',

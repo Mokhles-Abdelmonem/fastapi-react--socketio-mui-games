@@ -1,6 +1,6 @@
 from fastapi import Depends, APIRouter
 from fastapi.responses import JSONResponse
-from models.games import MessageJson, RuleJson
+from models.games import MessageJson, RuleJson, BoardJson
 from utils.crud import * 
 from sockets.server import sio_server
 from sockets.utils import get_chat_messages
@@ -49,3 +49,30 @@ async def set_rule(rule: RuleJson):
                 )  
     rule_collection.insert_one({"winning_number": rule.winning_number, "rules": rule.rules})
     return rule
+
+
+
+
+
+
+
+@games_router.post("/set_chess_board/{room_number}")
+async def set_chess_board(room_number, board: BoardJson):
+    room = await rooms_collection.find_one({"room_number": str(room_number)}) 
+    if not room:
+        return {"error":"room not found for this number"}   
+    room_update = {"chess_board": board.board}
+    rooms_collection.update_one({"room_number": str(room_number)},{"$set": room_update}) 
+    return {f"success": "board updated successfully"}
+
+
+
+@games_router.get("/get_chess_board/{room_number}")
+async def get_chess_board(room_number):
+    room = await rooms_collection.find_one({"room_number": str(room_number)}) 
+    if not room:
+        return {"error":"room not found for this number"}
+    return {"board": room["chess_board"]}
+
+
+

@@ -24,20 +24,5 @@ def get_player_color(room, piece, username):
 
 
 
-def available_moves(chess_board, r_index, c_ndex, piece, casel_context, passent_context):
-    if piece in ["P", "p"]:
-        return pawn_available_moves(chess_board, r_index, c_ndex, piece, passent_context)
-    if piece in ["R", "r"]:
-        return rook_available_moves(chess_board, r_index, c_ndex, piece)
-    if piece in ["B", "b"]:
-        return bishop_available_moves(chess_board, r_index, c_ndex, piece)
-    if piece in ["Q", "q"]:
-        return queen_available_moves(chess_board, r_index, c_ndex, piece)
-    if piece in ["N", "n"]:
-        return knight_available_moves(chess_board, r_index, c_ndex, piece)
-    if piece in ["K", "k"]:
-        return king_available_moves(chess_board, r_index, c_ndex, piece, casel_context)
-    return False
-
 
 

@@ -4,8 +4,8 @@ add = operator.add
 
 
 def get_enemies_list(piece):
-    whitelist = ["R", "N", "B", "Q", "P"]
-    blacklist = ["r", "n", "b", "q", "p"]
+    whitelist = ["P", "N", "B", "R", "Q"]
+    blacklist = ["p", "n", "b", "r", "q"]
     if piece in whitelist :
         return blacklist
     else :
@@ -674,3 +674,67 @@ def piece_is_pinned_bishop(chess_board, r_index, c_index, enemies_list, king_pos
             pinned_moves.append([index_r, index_c])
         else:
             return  False, None
+
+
+def available_moves(chess_board, r_index, c_ndex, piece, casel_context, passent_context):
+    if piece in ["P", "p"]:
+        return pawn_available_moves(chess_board, r_index, c_ndex, piece, passent_context)
+    if piece in ["R", "r"]:
+        return rook_available_moves(chess_board, r_index, c_ndex, piece)
+    if piece in ["B", "b"]:
+        return bishop_available_moves(chess_board, r_index, c_ndex, piece)
+    if piece in ["Q", "q"]:
+        return queen_available_moves(chess_board, r_index, c_ndex, piece)
+    if piece in ["N", "n"]:
+        return knight_available_moves(chess_board, r_index, c_ndex, piece)
+    if piece in ["K", "k"]:
+        return king_available_moves(chess_board, r_index, c_ndex, piece, casel_context)
+    return False
+
+
+
+
+def any_move(chess_board, piece, room):
+    casel_context = {
+        "check" : room["check"],
+        "K_moved" : room["K_moved"],
+        "k_moved" : room["k_moved"],
+        "R_0_moved" : room["R_0_moved"],
+        "r_0_moved" : room["r_0_moved"],
+        "R_7_moved" : room["R_7_moved"],
+        "r_7_moved" : room["r_7_moved"]
+        }
+    passent_context = {
+        "en_passant" : room["en_passant"],
+        "en_passant_to" : room["en_passant_to"]
+        }   
+    enemies_list = get_enemies_list(piece)
+    for piece in enemies_list:
+        for r_index, row in enumerate(chess_board):
+            if piece in row:
+                for c_index, square in enumerate(row) :
+                    if square == piece :
+                        moves = available_moves(chess_board, r_index, c_index, piece, casel_context, passent_context)
+                        if "p" in enemies_list:
+                            king_position = room["white_king_position"]
+                        if "P" in enemies_list:
+                            king_position = room["black_king_position"]
+                        pinned, pinned_moves = check_piece_is_pinned(chess_board, r_index, c_index, piece, king_position)
+                        if pinned and moves :
+                            aval_moves = []
+                            for move in pinned_moves :
+                                if move in moves :
+                                    aval_moves.append(move)
+                            moves = aval_moves
+                        forced_moves = room["forced_moves"]
+                        if forced_moves and moves:
+                            new_moves = []
+                            for move in forced_moves :
+                                if move in moves :
+                                    new_moves.append(move)
+                            moves = new_moves
+                        if moves :
+                            print("avalible moves for a piece", [r_index, c_index])
+                            print("and the moves are", moves)
+                            return True
+    return False

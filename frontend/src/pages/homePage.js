@@ -76,13 +76,13 @@ export default function Home() {
       const game_type = getGameType(data.game_type)
       confirmAlert({
         title: `Confirm ${game_type} game request`,
-        message: `${data.username_x} Requesting a ${game_type} game `,
+        message: `${data.username_x} Requesting a ${game_type} game in rule ${data.rule}, under timer ${data.timer} seconds for the move`,
         buttons: [
           {
             label: 'Yes',
             onClick: () => {
               localStorage.removeItem('hanging_response');
-              socket.emit('join_room', data.username_x, data.username_o, data.game_type, data.rule);
+              socket.emit('join_room', data.username_x, data.username_o, data.game_type, data.rule, data.timer);
               history.push('/game_room')
             }
           },

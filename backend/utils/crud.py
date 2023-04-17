@@ -128,13 +128,3 @@ async def retrieve_users():
         users.append(user)
     return users
 
-
-async def retrieve_rules():
-    rules = []
-    async for rule in rule_collection.find():
-        rules.append(rule["winning_number"])
-    return rules
-
-
-
-
