@@ -1,6 +1,6 @@
 from .utils import * 
 from fastapi_jwt_auth import AuthJWT
-from .chess import base_board
+from .chess import board_history
 
 @sio_server.event
 async def connect(sid, environ, auth):
@@ -199,7 +199,9 @@ async def join_room(sid, playerx, playero, game_type ,rule, timer):
         "game_type": game_type,
         "history": [None for i in range(9)],
         "rps_game": {},
-        "chess_board": base_board,
+        "threefold_dict": {}, 
+        "fifty_Move_count":0, 
+        "board_history": board_history,
         "chess_moves": 0,
         "black_king_position":[0,4],
         "white_king_position":[7,4],
@@ -316,7 +318,9 @@ async def rematch_game(sid, room_number):
         "x_turn":True,
         "history": [None for i in range(9)],
         "rps_game": {},
-        "chess_board": base_board,
+        "threefold_dict": {},
+        "fifty_Move_count":0, 
+        "board_history": board_history,
         "chess_moves": 0,
         "black_king_position":[0,4],
         "white_king_position":[7,4],

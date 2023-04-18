@@ -52,16 +52,19 @@ async def set_rule(rule: RuleJson):
 
 
 
-
-
-
-
 @games_router.post("/set_chess_board/{room_number}")
 async def set_chess_board(room_number, board: BoardJson):
-    room = await rooms_collection.find_one({"room_number": str(room_number)}) 
+    room = await rooms_collection.find_one({"room_number": str(room_number)})
     if not room:
         return {"error":"room not found for this number"}   
-    room_update = {"chess_board": board.board}
+    chess_history = room["board_history"]
+    chess_history[-1] = board.board
+    room_update = {"board_history": chess_history}
+    for board in chess_history :
+        for row in board:
+            print(row)
+        print("_______________  board from history _______________")
+    print("================ CHESS board history =================")
     rooms_collection.update_one({"room_number": str(room_number)},{"$set": room_update}) 
     return {f"success": "board updated successfully"}
 
@@ -72,7 +75,7 @@ async def get_chess_board(room_number):
     room = await rooms_collection.find_one({"room_number": str(room_number)}) 
     if not room:
         return {"error":"room not found for this number"}
-    return {"board": room["chess_board"]}
+    return {"board": room["board_history"][-1]}
 
 
 

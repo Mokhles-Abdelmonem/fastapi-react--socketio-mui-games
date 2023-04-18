@@ -4,7 +4,7 @@ from .utils import declare_winner, switch_timer, declare_draw
 async def get_chess_board(sid, username):
         user = await users_collection.find_one({"username": username})
         room = await rooms_collection.find_one({"room_number": user["room_number"]})
-        return {"chess_board":room["chess_board"], "check":room["check"]}
+        return {"chess_board":room["board_history"][-1], "check":room["check"]}
 
 @sio_server.event
 async def get_available_moves(sid, username, r_index, c_index, piece):
@@ -19,7 +19,8 @@ async def get_available_moves(sid, username, r_index, c_index, piece):
     draw = room.get("draw")
     if not player_turn or not player_color or mate or winner or draw:
         return False
-    chess_board = room["chess_board"]
+    chess_history = room["board_history"]
+    chess_board = chess_history[-1]
     casel_context = {
     "check" : room["check"],
     "K_moved" : room["K_moved"],
@@ -67,7 +68,8 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
     player = await users_collection.find_one({"username": username})
     room_number = player['room_number']
     room = await rooms_collection.find_one({"room_number": room_number})
-    chess_board = room["chess_board"]
+    chess_history = room["board_history"] 
+    chess_board = chess_history[-1]
     piece = chess_board[initial_r_index][initial_c_index]
     chess_moves = room["chess_moves"]
     chess_moves += 1
@@ -222,10 +224,17 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
             if not any_move(chess_board, piece, room):
                 print("there no king_moves or any other moves")
                 opponent_name = room[opponent_side]
-                declare_draw(username, room_number, opponent_name)
+                await declare_draw(username, room_number, opponent_name)
         await sio_server.emit('setCheck', None, to=room_number)
 
-    room_update["chess_board"] = chess_board
+    draw = await check_draw(chess_board, room_number, room_update)
+    if draw:
+        opponent_name = room[opponent_side]
+        await declare_draw(username, room_number, opponent_name)
+
+
+    chess_history.append(chess_board)
+    room_update["board_history"] = chess_history
     await sio_server.emit('setChessBoard', chess_board, to=room_number)
     
     chess_moves = room["chess_moves"]
@@ -236,3 +245,92 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
     await switch_timer(player, opponent_name, player_side)
 
     rooms_collection.update_one({"room_number": room_number},{"$set": room_update})
+
+
+
+
+async def check_draw(chess_board, room_number, room_update):
+    old_room = await rooms_collection.find_one({"room_number": room_number})
+    repetition = await threefold_repetition(chess_board, old_room, room_update)
+    if repetition :
+        return True
+    pass_fifty = await fifty_Move_rule_count(chess_board, old_room, room_update)
+    if pass_fifty :
+        return True
+    return False
+
+async def threefold_repetition(chess_board, old_room, room_update):
+    threefold_dict = old_room["threefold_dict"]
+    old_chess_history = old_room["board_history"]
+    if chess_board in old_chess_history :
+        threefold_count = threefold_dict.get(str(chess_board))
+        if threefold_count :
+            threefold_count += 1
+        else:
+            threefold_count = 1
+        threefold_dict[str(chess_board)] = threefold_count
+        room_update["threefold_dict"] = threefold_dict
+        if threefold_count == 3:
+            return True, room_update
+    return False
+
+
+
+
+async def fifty_Move_rule_count(chess_board, old_room, room_update):
+    last_chess_board = old_room["board_history"][-1]
+    fifty_Move_count = old_room["fifty_Move_count"]
+    new_board_squares = 0
+    old_board_squares = 0
+    for index in range(8):
+        new_board_squares += chess_board[index].count(" ")
+        old_board_squares += last_chess_board[index].count(" ")
+    if new_board_squares != old_board_squares:
+        room_update["fifty_Move_count"] = 0
+        return False
+    for r_index in range(1, 8):
+        for c_index in range(8):
+            old_square = last_chess_board[r_index][c_index]
+            if old_square in ["p", "P"]:
+                square = chess_board[r_index][c_index]
+                if square != old_square:
+                    room_update["fifty_Move_count"] = 0
+                    return False
+    fifty_Move_count +=1
+    room_update["fifty_Move_count"] = fifty_Move_count
+    if fifty_Move_count == 50 :
+        return True 
+    return False
+
+    
+
+async def insufficient_material(chess_board, room_update):
+    bishop_index_wh = 0
+    bishop_count_wh = 0
+    bishop_count_bl = 0
+    knight_count_wh = 0
+    knight_count_bl = 0
+    for r_index, row in enumerate(chess_board):
+        for piece in ["p", "P", "r", "R", "q", "Q"]:
+            piece_count = row.count(piece)
+            if piece_count > 0 :
+                return False
+        
+        bishop_count_wh += row.count("B")
+        if bishop_count_wh > 1 :
+            return False
+        elif bishop_count_wh == 1 :
+            pass
+        bishop_count_bl += row.count("b")
+        if bishop_count_bl > 1 :
+            return False
+        knight_count_wh += row.count("N")
+        if knight_count_wh > 1 :
+            return False
+        knight_count_bl += row.count("n")
+        if knight_count_bl > 1 :
+            return False
+    if bishop_count_wh == 1 :
+        pass
+
+    return False

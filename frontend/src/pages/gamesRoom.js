@@ -303,7 +303,7 @@ export default function Game() {
                   >
 
                     <Typography variant="h2" gutterBottom>
-                      {timer ? timer: '00:15'}
+                      {timer ? timer: '--:--'}
                     </Typography>
                     
                   </Grid>
