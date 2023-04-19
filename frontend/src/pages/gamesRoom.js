@@ -47,6 +47,77 @@ export default function Game() {
   const [level, setLevel] = useState(0);
   const [game, setGame] = useState(null);
 
+  const [highlightMoves, setHighlightMoves] = useState([]);
+  const [highlightPiece, setHighlightPiece] = useState([]);
+  const [chessBoard, setChessBoard] = useState([Array(9).fill(null)]);
+  const [Check, setCheck] = useState(null);
+
+
+
+
+
+
+
+  function highlightClicked(rowIndex, index){
+    if( highlightMoves.length > 0 ){
+      for( let i = 0; i < highlightMoves.length; i++){
+        if (
+          highlightMoves[i][0] === rowIndex &&
+          highlightMoves[i][1] === index
+        ){
+          return true;
+        } 
+      }
+      return false;
+    }
+    
+  }
+
+  function handleChessClick(rowIndex, index, piece){
+    const highlClicked = highlightClicked(rowIndex, index)
+    if(highlClicked) {
+      const initRowIndex = highlightPiece[0]
+      const initIndex = highlightPiece[1]
+      console.log("init Highlight Piece >>>>>>>>>> ",[initRowIndex, initIndex]  )
+      socket.emit("submit_piece_move", username, rowIndex, index, initRowIndex, initIndex)
+    }
+    setHighlightPiece([]);
+    setHighlightMoves([]);
+    socket.emit("get_available_moves", username, rowIndex, index, piece, (result)=>{
+      console.log("current index >>>>>>>>>> ",rowIndex, index  )
+      if (result){
+        setHighlightPiece(result.highlightPiece);
+        setHighlightMoves(result.available_moves);
+      }
+    })
+  };
+
+
+
+
+  function HighlightMoves(rowIndex, index){
+    for (let i = 0; i < highlightMoves.length; i++ ){
+      if (rowIndex === highlightMoves[i][0] && index === highlightMoves[i][1]){
+        return true;
+      }
+    }
+    return false;
+  };
+
+
+  function HighlightPiece(rowIndex, index){
+      if (rowIndex === highlightPiece[0] && index === highlightPiece[1]){
+        return true;
+      }
+    return false;
+  };
+
+
+
+
+
+
+
 
   const leaveAction  = () => {
     if (playerWon || playerLost || playerDraw){
@@ -191,6 +262,10 @@ export default function Game() {
       socket.emit('get_user_level', username ,(level) => {
           setLevel(level)
       });
+      socket.emit('get_chess_board', username ,(result) => {
+        setChessBoard(result.chess_board);
+        setCheck(result.check);
+      });
     });
 
     socket.on('declareDraw', () => {
@@ -212,13 +287,58 @@ export default function Game() {
       logoutUser();
     });
 
+
+    socket.emit('get_chess_board', username ,(result) => {
+      setChessBoard(result.chess_board);
+      setCheck(result.check);
+    });
+
+    socket.on('setChessBoard', (board) => {
+      setChessBoard(board);
+    });
+
+
+
+    socket.on('setCheck', (King) => {
+      setCheck(King);
+    });
+
+    socket.on('PawnPermotion', (cordinates) => {
+      const r_index = cordinates[0];
+      const c_index = cordinates[1];
+      const initial_r_index = cordinates[2];
+      const initial_c_index = cordinates[3];
+      const PermotionList = ["Queen", "Rook", "Bishop", "Knight"]
+      const buttons = PermotionList.map((piece) => {
+        return {
+          label: `${piece}`,
+          onClick: () => {
+            socket.emit('permote_pawn', username, piece, r_index, c_index, initial_r_index, initial_c_index); 
+          }
+        }});
+      confirmAlert({
+        title: 'Tie ',
+        message: `the game settled to draw, your can win next time`,
+        buttons: buttons
+      });
+    });
+
+
   }, []);
 
 
   function getGameBoard(){
     if (game === 0) return <Board squares={board} handleClick={handleClick}/>
     if (game === 1) return <RPSBoard Clicked={Clicked} handleClick={handleRPSClick}/>
-    if (game === 2) return <ChessBoard socket={socket} username={username}/>
+    if (game === 2) return <ChessBoard 
+    socket={socket} 
+    username={username}
+    board={chessBoard}
+    Check={Check}
+    handleClick={handleChessClick}
+    HighlightPiece={HighlightPiece}
+    HighlightMoves={HighlightMoves}
+    />
   } 
 
   return (

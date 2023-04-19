@@ -738,3 +738,120 @@ def any_move(chess_board, piece, room):
                             print("and the moves are", moves)
                             return True
     return False
+
+
+
+
+async def check_draw(chess_board, old_room, room_update):
+    repetition = await threefold_repetition(chess_board, old_room, room_update)
+    if repetition :
+        return True
+    pass_fifty = await fifty_Move_rule_count(chess_board, old_room, room_update)
+    if pass_fifty :
+        return True
+    insufficient_material = await Insufficient_Material(chess_board)
+    if insufficient_material:
+        return True
+    return False
+
+async def threefold_repetition(chess_board, old_room, room_update):
+    threefold_dict = old_room["threefold_dict"]
+    old_chess_history = old_room["board_history"]
+    if chess_board in old_chess_history :
+        threefold_count = threefold_dict.get(str(chess_board))
+        if threefold_count :
+            threefold_count += 1
+        else:
+            threefold_count = 1
+        threefold_dict[str(chess_board)] = threefold_count
+        room_update["threefold_dict"] = threefold_dict
+        if threefold_count == 3:
+            return True, room_update
+    return False
+
+
+
+
+async def fifty_Move_rule_count(chess_board, old_room, room_update):
+    last_chess_board = old_room["board_history"][-1]
+    fifty_Move_count = old_room["fifty_Move_count"]
+    new_board_squares = 0
+    old_board_squares = 0
+    for index in range(8):
+        new_board_squares += chess_board[index].count(" ")
+        old_board_squares += last_chess_board[index].count(" ")
+    if new_board_squares != old_board_squares:
+        room_update["fifty_Move_count"] = 0
+        return False
+    for r_index in range(1, 8):
+        for c_index in range(8):
+            old_square = last_chess_board[r_index][c_index]
+            if old_square in ["p", "P"]:
+                square = chess_board[r_index][c_index]
+                if square != old_square:
+                    room_update["fifty_Move_count"] = 0
+                    return False
+    fifty_Move_count +=1
+    room_update["fifty_Move_count"] = fifty_Move_count
+    if fifty_Move_count == 50 :
+        return True 
+    return False
+
+    
+
+async def Insufficient_Material(chess_board):
+    bishop_r_count_wh = 0
+    bishop_r_count_bl = 0
+    knight_r_count_wh = 0
+    knight_r_count_bl = 0
+    bishop_cordinates_wh = []
+    bishop_cordinates_bl = []
+    knight_cordinates_wh = []
+    knight_cordinates_bl = []
+    for r_index, row in enumerate(chess_board):
+        for piece in ["p", "P", "r", "R", "q", "Q"]:
+            if piece in row:
+                piece_count = row.count(piece)
+                if piece_count > 0 :
+                    return False
+        print("no piece in board expect B and N")
+        if "B" in row:
+            bishop_r_count_wh += row.count("B")
+            if bishop_r_count_wh > 1 :
+                return False
+            elif bishop_r_count_wh == 1 :
+                bishop_cordinates_wh = [r_index, row.index("B")]
+                print("bishop_cordinates_wh ________ ", bishop_cordinates_wh)
+
+        if "b" in row:
+            bishop_r_count_bl += row.count("b")
+            if bishop_r_count_bl > 1 :
+                return False
+            elif bishop_r_count_bl == 1 :
+                bishop_cordinates_bl = [r_index, row.index("b")]
+                print("bishop_cordinates_bl ________ ", bishop_cordinates_bl)
+        if "N" in row:
+            knight_r_count_wh += row.count("N")
+            if knight_r_count_wh > 1 :
+                return False
+            elif knight_r_count_wh == 1 :
+                knight_cordinates_wh = [r_index, row.index("N")]
+                print("knight_cordinates_wh ________ ", knight_cordinates_wh)
+        if "n" in row:
+            knight_r_count_bl += row.count("n")
+            if knight_r_count_bl > 1 :
+                return False
+            elif knight_r_count_bl == 1 :
+                knight_cordinates_bl = [r_index, row.index("n")]
+                print("knight_cordinates_bl ________ ", knight_cordinates_bl)
+    if bishop_cordinates_wh and knight_cordinates_wh :
+        return False
+    if bishop_cordinates_bl and knight_cordinates_bl :
+        return False
+    if bishop_cordinates_wh and bishop_cordinates_bl :
+        wh_bishop_square_color = (bishop_cordinates_wh[0]+bishop_cordinates_wh[1])%2 == 0
+        bl_bishop_square_color = (bishop_cordinates_bl[0]+bishop_cordinates_bl[1])%2 == 0
+        if wh_bishop_square_color != bl_bishop_square_color:
+            return False
+
+    return True

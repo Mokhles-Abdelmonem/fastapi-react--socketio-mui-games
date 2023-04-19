@@ -47,7 +47,11 @@ async def set_rule(rule: RuleJson):
                 status_code=501,
                 content={"rule": "Invalid rule all rules must be integers and in range 0-8"},
                 )  
-    rule_collection.insert_one({"winning_number": rule.winning_number, "rules": rule.rules})
+    rule_collection.insert_one({
+        "winning_number": rule.winning_number,
+        "timer": rule.timer,
+        "rules": rule.rules
+        })
     return rule
 
 

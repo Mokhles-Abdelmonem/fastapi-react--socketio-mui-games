@@ -15,7 +15,8 @@ class BaseRuleJson(BaseModel):
 class RuleJson(BaseRuleJson):
     """
     """
-    rules: list[list[int]] 
+    timer: Union[int, None] = None
+    rules: list[list[int]]
 
 
 class BoardJson(BaseModel):

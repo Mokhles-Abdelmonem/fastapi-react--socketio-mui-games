@@ -3,64 +3,21 @@ import Square from "./Square";
 import { useHistory } from "react-router-dom";
 
 
-export default function ChessBoard({socket, username}) {
+export default function ChessBoard({
+  socket,
+  username,
+  board,
+  Check,
+  handleClick,
+  HighlightPiece,
+  HighlightMoves
+  }) {
 
-  const [board, setChessBoard] = useState([Array(9).fill(null)]);
-  const [Check, setCheck] = useState(null);
-  const [highlightMoves, setHighlightMoves] = useState([]);
-  const [highlightPiece, setHighlightPiece] = useState([]);
+  const [playerSide, setPlayerSide] = useState(null);
   const history = useHistory();
 
-  function highlightClicked(rowIndex, index){
-    if( highlightMoves.length > 0 ){
-      for( let i = 0; i < highlightMoves.length; i++){
-        if (
-          highlightMoves[i][0] === rowIndex &&
-          highlightMoves[i][1] === index
-        ){
-          return true;
-        } 
-      }
-      return false;
-    }
-    
-  }
-
-  function handleClick(rowIndex, index, piece){
-    const highlClicked = highlightClicked(rowIndex, index)
-    if(highlClicked) {
-      const initRowIndex = highlightPiece[0]
-      const initIndex = highlightPiece[1]
-      console.log("init Highlight Piece >>>>>>>>>> ",[initRowIndex, initIndex]  )
-      socket.emit("submit_piece_move", username, rowIndex, index, initRowIndex, initIndex)
-    }
-    setHighlightPiece([]);
-    setHighlightMoves([]);
-    socket.emit("get_available_moves", username, rowIndex, index, piece, (result)=>{
-      console.log("current index >>>>>>>>>> ",rowIndex, index  )
-      if (result){
-        setHighlightPiece(result.highlightPiece);
-        setHighlightMoves(result.available_moves);
-      }
-    })
-  };
-
-  function HighlightMoves(rowIndex, index){
-    for (let i = 0; i < highlightMoves.length; i++ ){
-      if (rowIndex === highlightMoves[i][0] && index === highlightMoves[i][1]){
-        return true;
-      }
-    }
-    return false;
-  };
 
 
-  function HighlightPiece(rowIndex, index){
-      if (rowIndex === highlightPiece[0] && index === highlightPiece[1]){
-        return true;
-      }
-    return false;
-  };
 
 
   function Board(){
@@ -79,6 +36,7 @@ export default function ChessBoard({socket, username}) {
             RowIndex={rowIndex} 
             ColIndex={index} 
             Check={Check}
+            playerSide={playerSide}
             />
           ))
         ))
@@ -90,29 +48,9 @@ export default function ChessBoard({socket, username}) {
 
 
   useEffect(() => {
-    socket.emit('update_player_session',  username ,(result) => {
-      const player = result.player;
-      if(!player.in_room) history.push("/")
-    });
 
-    socket.emit('get_chess_board', username ,(result) => {
-      setChessBoard(result.chess_board);
-      setCheck(result.check);
-    });
-
-    socket.on('setChessBoard', (board) => {
-      setChessBoard(board);
-    });
-
-    socket.on('rematchGame', () => {
-      socket.emit('get_chess_board', username ,(result) => {
-        setChessBoard(result.chess_board);
-        setCheck(result.check);
-      });
-    });
-
-    socket.on('setCheck', (King) => {
-      setCheck(King);
+    socket.emit('get_player_side', username ,(result) => {
+      setPlayerSide(result);
     });
 
   }, []);
@@ -120,7 +58,7 @@ export default function ChessBoard({socket, username}) {
   return (
     <>
       <div className="status"></div>
-      <div className="board">
+      <div className={`board ${playerSide === "player_o" ? ("rotate-element"):("")}`}>
         {Board()}
       </div>
     </>

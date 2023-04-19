@@ -11,7 +11,8 @@ export default function Square({
     chessGame=false,
     RowIndex,
     ColIndex,
-    Check
+    Check,
+    playerSide
     }) {
     
     let style={
@@ -81,7 +82,9 @@ export default function Square({
     <Button variant="contained" style={style}
         color={color}
         onClick={onSquareClick}>
-            <Typography variant={variant}>
+            <Typography 
+            className={playerSide === "player_o" ? ("rotate-element"):("")}
+            variant={variant}>
                 {newValue} 
             </Typography>
         

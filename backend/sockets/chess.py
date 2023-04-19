@@ -1,11 +1,38 @@
 from .chess_utils import * 
 from .utils import declare_winner, switch_timer, declare_draw
+
 @sio_server.event
 async def get_chess_board(sid, username):
         user = await users_collection.find_one({"username": username})
         room = await rooms_collection.find_one({"room_number": user["room_number"]})
         return {"chess_board":room["board_history"][-1], "check":room["check"]}
 
+@sio_server.event
+async def get_player_side(sid, username):
+        user = await users_collection.find_one({"username": username})
+        room = await rooms_collection.find_one({"room_number": user["room_number"]})
+        return "player_x" if username == room["player_x"] else "player_o"
+
+
+@sio_server.event
+async def permote_pawn(sid, username, piece, r_index, c_index, initial_r_index, initial_c_index):
+        user = await users_collection.find_one({"username": username})
+        room = await rooms_collection.find_one({"room_number": user["room_number"]})
+        chess_history = room["board_history"]
+        piece_in_board = piece[0]
+        if piece_in_board == "K":
+            piece_in_board = "N"
+        if r_index == 7:
+            piece_in_board = piece_in_board.lower()
+        chess_board = chess_history[-1]
+        chess_board[r_index][c_index] = piece_in_board
+        chess_history.append(chess_board)
+        room_update = {
+            "chess_history":chess_history,
+            "pawn_permotion": []
+        }
+        rooms_collection.update_one({"room_number": user["room_number"]},{"$set": room_update})
+        await submit_piece_move(sid, username, r_index, c_index, initial_r_index, initial_c_index, piece_in_board)
 @sio_server.event
 async def get_available_moves(sid, username, r_index, c_index, piece):
     player = await users_collection.find_one({"username": username})
@@ -17,7 +44,8 @@ async def get_available_moves(sid, username, r_index, c_index, piece):
     mate = room["mate"]
     winner = room["winner"]
     draw = room.get("draw")
-    if not player_turn or not player_color or mate or winner or draw:
+    pawn_permotion = room["pawn_permotion"]
+    if not player_turn or not player_color or mate or winner or draw or pawn_permotion:
         return False
     chess_history = room["board_history"]
     chess_board = chess_history[-1]
@@ -64,13 +92,14 @@ async def get_available_moves(sid, username, r_index, c_index, piece):
     return {"available_moves":moves, "highlightPiece":[r_index, c_index]}
 
 @sio_server.event
-async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, initial_c_index):
+async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, initial_c_index, piece=None):
     player = await users_collection.find_one({"username": username})
     room_number = player['room_number']
     room = await rooms_collection.find_one({"room_number": room_number})
     chess_history = room["board_history"] 
     chess_board = chess_history[-1]
-    piece = chess_board[initial_r_index][initial_c_index]
+    if not piece :
+        piece = chess_board[initial_r_index][initial_c_index]
     chess_moves = room["chess_moves"]
     chess_moves += 1
     room_update = {
@@ -78,6 +107,7 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
         "forced_moves":[],
         "check":None,
     }
+
     if piece == "K":
         
         player_side = "player_x"
@@ -182,7 +212,10 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
                         en_passant_list.append([r_index, c_index+1])
                     en_passant_to = [r_index+1, c_index]
             if r_index == 0:
-                chess_board[r_index][c_index] = "Q"
+                # chess_board[r_index][c_index] = "Q"
+                room_update["pawn_permotion"] = [r_index, c_index]
+                await sio_server.emit("PawnPermotion", [r_index, c_index, initial_r_index, initial_c_index], to=player["sid"])
+                return
         elif piece == "p":
             if [r_index, c_index] == en_passant_to:
                 chess_board[r_index-1][c_index] = " "
@@ -198,7 +231,10 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
                         en_passant_list.append([r_index, c_index+1])
                     en_passant_to = [r_index-1, c_index]
             if r_index == 7:
-                chess_board[r_index][c_index] = "q"
+                # chess_board[r_index][c_index] = "q"
+                room_update["pawn_permotion"] = [r_index, c_index]
+                await sio_server.emit("PawnPermotion", [r_index, c_index, initial_r_index, initial_c_index],  to=player["sid"])
+                return
         room_update["en_passant"] = en_passant_list 
         room_update["en_passant_to"] = en_passant_to 
 
@@ -222,12 +258,11 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
         king_moves = king_available_moves(chess_board, k_index_r, k_index_c, the_king)
         if not king_moves:
             if not any_move(chess_board, piece, room):
-                print("there no king_moves or any other moves")
                 opponent_name = room[opponent_side]
                 await declare_draw(username, room_number, opponent_name)
         await sio_server.emit('setCheck', None, to=room_number)
-
-    draw = await check_draw(chess_board, room_number, room_update)
+    old_room = await rooms_collection.find_one({"room_number": room_number})
+    draw = await check_draw(chess_board, old_room, room_update)
     if draw:
         opponent_name = room[opponent_side]
         await declare_draw(username, room_number, opponent_name)
@@ -247,90 +282,3 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
     rooms_collection.update_one({"room_number": room_number},{"$set": room_update})
 
 
-
-
-async def check_draw(chess_board, room_number, room_update):
-    old_room = await rooms_collection.find_one({"room_number": room_number})
-    repetition = await threefold_repetition(chess_board, old_room, room_update)
-    if repetition :
-        return True
-    pass_fifty = await fifty_Move_rule_count(chess_board, old_room, room_update)
-    if pass_fifty :
-        return True
-    return False
-
-async def threefold_repetition(chess_board, old_room, room_update):
-    threefold_dict = old_room["threefold_dict"]
-    old_chess_history = old_room["board_history"]
-    if chess_board in old_chess_history :
-        threefold_count = threefold_dict.get(str(chess_board))
-        if threefold_count :
-            threefold_count += 1
-        else:
-            threefold_count = 1
-        threefold_dict[str(chess_board)] = threefold_count
-        room_update["threefold_dict"] = threefold_dict
-        if threefold_count == 3:
-            return True, room_update
-    return False
-
-
-
-
-async def fifty_Move_rule_count(chess_board, old_room, room_update):
-    last_chess_board = old_room["board_history"][-1]
-    fifty_Move_count = old_room["fifty_Move_count"]
-    new_board_squares = 0
-    old_board_squares = 0
-    for index in range(8):
-        new_board_squares += chess_board[index].count(" ")
-        old_board_squares += last_chess_board[index].count(" ")
-    if new_board_squares != old_board_squares:
-        room_update["fifty_Move_count"] = 0
-        return False
-    for r_index in range(1, 8):
-        for c_index in range(8):
-            old_square = last_chess_board[r_index][c_index]
-            if old_square in ["p", "P"]:
-                square = chess_board[r_index][c_index]
-                if square != old_square:
-                    room_update["fifty_Move_count"] = 0
-                    return False
-    fifty_Move_count +=1
-    room_update["fifty_Move_count"] = fifty_Move_count
-    if fifty_Move_count == 50 :
-        return True 
-    return False
-
-    
-
-async def insufficient_material(chess_board, room_update):
-    bishop_index_wh = 0
-    bishop_count_wh = 0
-    bishop_count_bl = 0
-    knight_count_wh = 0
-    knight_count_bl = 0
-    for r_index, row in enumerate(chess_board):
-        for piece in ["p", "P", "r", "R", "q", "Q"]:
-            piece_count = row.count(piece)
-            if piece_count > 0 :
-                return False
-        
-        bishop_count_wh += row.count("B")
-        if bishop_count_wh > 1 :
-            return False
-        elif bishop_count_wh == 1 :
-            pass
-        bishop_count_bl += row.count("b")
-        if bishop_count_bl > 1 :
-            return False
-        knight_count_wh += row.count("N")
-        if knight_count_wh > 1 :
-            return False
-        knight_count_bl += row.count("n")
-        if knight_count_bl > 1 :
-            return False
-    if bishop_count_wh == 1 :
-        pass
-
-    return False
