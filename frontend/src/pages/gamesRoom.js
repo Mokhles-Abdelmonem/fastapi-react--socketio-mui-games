@@ -259,6 +259,8 @@ export default function Game() {
       setPlayerDraw(false);
       setBoard([Array(9).fill(null)]);
       setClicked(null);
+      setHighlightPiece([]);
+      setHighlightMoves([]);
       socket.emit('get_user_level', username ,(level) => {
           setLevel(level)
       });

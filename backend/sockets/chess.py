@@ -212,7 +212,6 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
                         en_passant_list.append([r_index, c_index+1])
                     en_passant_to = [r_index+1, c_index]
             if r_index == 0:
-                # chess_board[r_index][c_index] = "Q"
                 room_update["pawn_permotion"] = [r_index, c_index]
                 await sio_server.emit("PawnPermotion", [r_index, c_index, initial_r_index, initial_c_index], to=player["sid"])
                 return
@@ -231,7 +230,6 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
                         en_passant_list.append([r_index, c_index+1])
                     en_passant_to = [r_index-1, c_index]
             if r_index == 7:
-                # chess_board[r_index][c_index] = "q"
                 room_update["pawn_permotion"] = [r_index, c_index]
                 await sio_server.emit("PawnPermotion", [r_index, c_index, initial_r_index, initial_c_index],  to=player["sid"])
                 return

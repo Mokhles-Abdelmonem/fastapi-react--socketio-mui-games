@@ -734,8 +734,6 @@ def any_move(chess_board, piece, room):
                                     new_moves.append(move)
                             moves = new_moves
                         if moves :
-                            print("avalible moves for a piece", [r_index, c_index])
-                            print("and the moves are", moves)
                             return True
     return False
 
@@ -814,14 +812,12 @@ async def Insufficient_Material(chess_board):
                 piece_count = row.count(piece)
                 if piece_count > 0 :
                     return False
-        print("no piece in board expect B and N")
         if "B" in row:
             bishop_r_count_wh += row.count("B")
             if bishop_r_count_wh > 1 :
                 return False
             elif bishop_r_count_wh == 1 :
                 bishop_cordinates_wh = [r_index, row.index("B")]
-                print("bishop_cordinates_wh ________ ", bishop_cordinates_wh)
 
         if "b" in row:
             bishop_r_count_bl += row.count("b")
@@ -829,21 +825,18 @@ async def Insufficient_Material(chess_board):
                 return False
             elif bishop_r_count_bl == 1 :
                 bishop_cordinates_bl = [r_index, row.index("b")]
-                print("bishop_cordinates_bl ________ ", bishop_cordinates_bl)
         if "N" in row:
             knight_r_count_wh += row.count("N")
             if knight_r_count_wh > 1 :
                 return False
             elif knight_r_count_wh == 1 :
                 knight_cordinates_wh = [r_index, row.index("N")]
-                print("knight_cordinates_wh ________ ", knight_cordinates_wh)
         if "n" in row:
             knight_r_count_bl += row.count("n")
             if knight_r_count_bl > 1 :
                 return False
             elif knight_r_count_bl == 1 :
                 knight_cordinates_bl = [r_index, row.index("n")]
-                print("knight_cordinates_bl ________ ", knight_cordinates_bl)
     if bishop_cordinates_wh and knight_cordinates_wh :
         return False
     if bishop_cordinates_bl and knight_cordinates_bl :

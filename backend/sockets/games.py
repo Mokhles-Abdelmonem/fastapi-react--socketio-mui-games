@@ -54,7 +54,6 @@ async def get_player(sid, username):
 
 @sio_server.event
 async def update_player_session(sid, username):
-    print("_______________ update_player_session called ________________")
     users_collection.update_one({"username" : username}, {"$set" : {"sid": sid}})
     player = await users_collection.find_one({"username" : username})
     player.pop("_id")
