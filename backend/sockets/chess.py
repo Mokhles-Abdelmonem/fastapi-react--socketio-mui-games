@@ -240,6 +240,7 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
     index_c = king_position[1]
     check, available_moves , forced_moves = king_is_checked(chess_board, index_r, index_c, the_king)   
     if check :
+        print("Checked on this move +++++++++++  ___________________ ")
         room_update['check'] = the_king
         room_update["forced_moves"] = forced_moves
         await sio_server.emit('setCheck', the_king, to=room_number)
@@ -251,6 +252,7 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
             opponent = await users_collection.find_one({'username': opponent_name})
             await declare_winner(player ,opponent , room)
     else:
+        print("not Checked on this move --------------- ___________________ ")
         k_index_r = king_position[0]
         k_index_c = king_position[1]
         king_moves = king_available_moves(chess_board, k_index_r, k_index_c, the_king)
