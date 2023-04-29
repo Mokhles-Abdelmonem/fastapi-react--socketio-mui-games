@@ -221,7 +221,9 @@ def knight_available_moves(chess_board, r_index, c_index, piece):
                     moves.append([index_r, index_c])
     return moves
 
-def king_castle_moves(chess_board, r_index, c_index, piece):
+def king_castle_moves(chess_board, castle_context, r_index, c_index, piece, rook):
+    Rook_0_moved = castle_context[f"{rook}_0_moved"]
+    Rook_7_moved = castle_context[f"{rook}_7_moved"]
     moves = []
     rook_0_next_square = [
         [r_index, 1],
@@ -232,17 +234,20 @@ def king_castle_moves(chess_board, r_index, c_index, piece):
         [r_index, 5],
         [r_index, 6]
     ]
-
-    rook_0_ready_to_castle = rook_ready_to_castle(chess_board, rook_0_next_square, 0, piece)
-    rook_7_ready_to_castle = rook_ready_to_castle(chess_board, rook_7_next_square, 7, piece)
-    
-    if rook_0_ready_to_castle :
-        moves.append([r_index, 2])
-    if rook_7_ready_to_castle :
-        moves.append([r_index, 6])
+    if not Rook_0_moved :
+        rook_0_ready_to_castle = rook_ready_to_castle(chess_board, rook_0_next_square, 0, piece, r_index, rook)
+        if rook_0_ready_to_castle :
+            moves.append([r_index, 2])
+    if not Rook_7_moved :
+        rook_7_ready_to_castle = rook_ready_to_castle(chess_board, rook_7_next_square, 7, piece, r_index, rook)
+        if rook_7_ready_to_castle :
+            moves.append([r_index, 6])
     return moves
 
-def rook_ready_to_castle(chess_board, next_square, rook_c_index, piece):
+def rook_ready_to_castle(chess_board, next_square, rook_c_index, piece, r_index, rook):
+    the_rook_square = chess_board[r_index][rook_c_index]
+    if the_rook_square != rook:
+        return False
     for cordinate in next_square :
         index_r = cordinate[0]
         index_c = cordinate[1]
@@ -280,10 +285,8 @@ def king_available_moves(chess_board, r_index, c_index, piece, castle_context=No
     if castle_context:
         check = castle_context["check"]
         King_moved = castle_context[f"{piece}_moved"]
-        Rook_0_moved = castle_context[f"{rook}_0_moved"]
-        Rook_7_moved = castle_context[f"{rook}_7_moved"]
-        if not King_moved and (not Rook_0_moved or not Rook_7_moved) and not check:
-            castle_moves = king_castle_moves(chess_board, r_index, c_index, piece)
+        if not King_moved and not check:
+            castle_moves = king_castle_moves(chess_board, castle_context, r_index, c_index, piece, rook)
             moves = moves + castle_moves
     return moves
 
@@ -475,7 +478,7 @@ def get_valid_forced_moves(chess_board, piece, forced_moves_list):
 
 def check_square_safety(chess_board, index_r, index_c, piece):
     functions = [
-        can_pawns_defend, 
+        is_safe_from_pawns_defend, 
         is_safe_from_rooks, 
         is_safe_from_bishop, 
         is_safe_from_knight
@@ -489,11 +492,11 @@ def check_square_safety(chess_board, index_r, index_c, piece):
     return True
 
 
-def can_pawns_defend(chess_board, r_index, c_index, piece):
+def is_safe_from_pawns_defend(chess_board, r_index, c_index, piece):
     moves = []
     square  = chess_board[r_index][c_index]
     if square != " ":
-        return True, None
+        return is_safe_from_pawns(chess_board, r_index, c_index, piece)
     if piece == "K":
         if r_index > 0:
             if chess_board[r_index-1][c_index] == "p":
@@ -513,6 +516,12 @@ def can_pawns_defend(chess_board, r_index, c_index, piece):
             if chess_board[r_index+2][c_index] == "P":
                 moves.append([r_index+2, c_index])
                 return False, None
+    return True, None
+
+
+
+def can_pawn_take(chess_board, r_index, c_index, piece):
+    moves = []
     return True, None
 
 

@@ -141,8 +141,8 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
 
         player_side = "player_o"
         opponent_side = "player_x"
-        the_king = "k"
-        king_position = room["black_king_position"]
+        the_king = "K"
+        king_position = room["white_king_position"]
 
         right_square = None 
         left_square = None
@@ -183,14 +183,14 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
             opponent_side = "player_x"
 
         if piece == "R":
-            if initial_r_index == 0:
+            if initial_c_index == 0:
                 room_update["R_0_moved"] = True
-            elif initial_r_index == 7: 
+            elif initial_c_index == 7: 
                 room_update["R_7_moved"] = True
         elif piece == "r":
-            if initial_r_index == 0:
+            if initial_c_index == 0:
                 room_update["r_0_moved"] = True
-            elif initial_r_index == 7: 
+            elif initial_c_index == 7: 
                 room_update["r_7_moved"] = True
 
 
@@ -240,7 +240,6 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
     index_c = king_position[1]
     check, available_moves , forced_moves = king_is_checked(chess_board, index_r, index_c, the_king)   
     if check :
-        print("Checked on this move +++++++++++  ___________________ ")
         room_update['check'] = the_king
         room_update["forced_moves"] = forced_moves
         await sio_server.emit('setCheck', the_king, to=room_number)
@@ -252,11 +251,10 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
             opponent = await users_collection.find_one({'username': opponent_name})
             await declare_winner(player ,opponent , room)
     else:
-        print("not Checked on this move --------------- ___________________ ")
         k_index_r = king_position[0]
         k_index_c = king_position[1]
         king_moves = king_available_moves(chess_board, k_index_r, k_index_c, the_king)
-        if not king_moves:
+        if not king_moves and piece not in ["K", "k"]:
             if not any_move(chess_board, piece, room):
                 opponent_name = room[opponent_side]
                 await declare_draw(username, room_number, opponent_name)
@@ -278,6 +276,7 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
     
     
     await switch_timer(player, opponent_name, player_side)
+
 
     rooms_collection.update_one({"room_number": room_number},{"$set": room_update})
 
