@@ -3,9 +3,16 @@ sub = operator.sub
 add = operator.add
 
 
-def get_enemies_list(piece):
+def get_enemies_list(piece, king=None):
     whitelist = ["P", "N", "B", "R", "Q"]
     blacklist = ["p", "n", "b", "r", "q"]
+
+    if king :
+        if piece == "K" :
+            return blacklist
+        elif piece == "k":
+            return whitelist
+        
     if piece in whitelist :
         return blacklist
     else :
@@ -716,8 +723,11 @@ def any_move(chess_board, piece, room):
     passent_context = {
         "en_passant" : room["en_passant"],
         "en_passant_to" : room["en_passant_to"]
-        }   
-    enemies_list = get_enemies_list(piece)
+        }
+    king = None
+    if piece in ["K", "k"]:
+        king = True
+    enemies_list = get_enemies_list(piece, king)
     for piece in enemies_list:
         for r_index, row in enumerate(chess_board):
             if piece in row:
@@ -849,6 +859,10 @@ async def Insufficient_Material(chess_board):
     if bishop_cordinates_wh and knight_cordinates_wh :
         return False
     if bishop_cordinates_bl and knight_cordinates_bl :
+        return False
+    if bishop_cordinates_wh and knight_cordinates_bl :
+        return False
+    if bishop_cordinates_bl and knight_cordinates_wh :
         return False
     if bishop_cordinates_wh and bishop_cordinates_bl :
         wh_bishop_square_color = (bishop_cordinates_wh[0]+bishop_cordinates_wh[1])%2 == 0

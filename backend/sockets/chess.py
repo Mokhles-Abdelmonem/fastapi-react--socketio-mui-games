@@ -254,7 +254,8 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
         k_index_r = king_position[0]
         k_index_c = king_position[1]
         king_moves = king_available_moves(chess_board, k_index_r, k_index_c, the_king)
-        if not king_moves and piece not in ["K", "k"]:
+        if not king_moves :
+            print("the piece is  >>>>>>>>>>>>>>>> ", piece)
             if not any_move(chess_board, piece, room):
                 opponent_name = room[opponent_side]
                 await declare_draw(username, room_number, opponent_name)
