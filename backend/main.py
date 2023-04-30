@@ -28,8 +28,8 @@ def authjwt_exception_handler(request: Request, exc: AuthJWTException):
 ################# Socket IO #################
 
 origins = [
-    "http://192.168.1.3",
-    "http://192.168.1.3:3000",
+    "http://localhost",
+    "http://localhost:3000",
 ]
 
 app.mount('/', app=sio_app)
@@ -45,4 +45,4 @@ app.add_middleware(
 
 
 if __name__ == '__main__':
-    uvicorn.run('main:app', reload=True, host="192.168.1.9")
+    uvicorn.run('main:app', reload=True, host="localhost")
