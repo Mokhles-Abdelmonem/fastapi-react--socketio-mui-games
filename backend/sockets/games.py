@@ -36,6 +36,7 @@ async def add_user(sid, username):
         "player_won" : False,
         "player_lost" : False,
         "player_draw" : False,
+        "draw_request":False,
         "side" : '',
         "status" : ''
     }
@@ -80,6 +81,7 @@ async def player_logged_out(sid, username, opponent_name):
         "player_won" : False,
         "player_lost" : False,
         "player_draw" : False,
+        "draw_request":False,
         "win_number" : 0,
         "side" : '',
         "status" : ''
@@ -181,6 +183,7 @@ async def join_room(sid, playerx, playero, game_type ,rule, timer):
         "player_lost":False,
         "player_draw":False,
         "in_room":True,
+        "draw_request":False,
         "room_number":room_number,
     }
     users_collection.update_one({"username" : playerx}, {"$set" : player_update})
@@ -309,7 +312,8 @@ async def rematch_game(sid, room_number):
     player_update = {
         "player_won" : False,
         "player_lost" : False,
-        "player_draw" : False
+        "player_draw" : False,
+        "draw_request":False,
     }
     room_update = {
         "winner": None,
@@ -370,6 +374,7 @@ async def leave_room(sid, username, opponent_name):
         "player_won" : False,
         "player_lost" : False,
         "player_draw" : False,
+        "draw_request":False,
         "win_number" : 0,
         "side" : '',
     }

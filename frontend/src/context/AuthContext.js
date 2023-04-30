@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
   const Token = localStorage.getItem("authTokens")
   const verifyToken = async () => {
     const access_token = JSON.parse(Token).access_token
-    const response = await fetch("http://127.0.0.1:8000/auth/verify/", {
+    const response = await fetch(`${API_URL}/auth/verify/`, {
       method: "POST",
       headers: {
         'Accept': 'application/json',
@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }) => {
 
 
   const loginUser = async (username, password) => {
-    const response = await fetch("http://127.0.0.1:8000/auth/token/", {
+    const response = await fetch(`${API_URL}/auth/token/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -103,7 +103,7 @@ export const AuthProvider = ({ children }) => {
   };
   
   const registerUser = async (username, email, password) => {
-    const response = await fetch("http://127.0.0.1:8000/auth/register/", {
+    const response = await fetch(`${API_URL}/auth/register/`, {
       method: "POST",
       headers: {
         'Accept': 'application/json',

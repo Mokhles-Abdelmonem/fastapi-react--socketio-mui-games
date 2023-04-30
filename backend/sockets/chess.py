@@ -255,7 +255,6 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
         k_index_c = king_position[1]
         king_moves = king_available_moves(chess_board, k_index_r, k_index_c, the_king)
         if not king_moves :
-            print("the piece is  >>>>>>>>>>>>>>>> ", piece)
             if not any_move(chess_board, piece, room):
                 opponent_name = room[opponent_side]
                 await declare_draw(username, room_number, opponent_name)
@@ -282,3 +281,21 @@ async def submit_piece_move(sid, username, r_index, c_index, initial_r_index, in
     rooms_collection.update_one({"room_number": room_number},{"$set": room_update})
 
 
+@sio_server.event
+async def handle_draw_request(sid, opponent_name):
+    user = await users_collection.find_one({"username": opponent_name})
+    users_collection.update_one({"username": opponent_name},{"$set": {"draw_request":True}})
+    await sio_server.emit('setDrawRequest', True , to=user["sid"])
+
+    
+
+
+@sio_server.event
+async def handle_draw_decline(sid, username):
+    users_collection.update_one({"username": username},{"$set": {"draw_request":False}})
+
+@sio_server.event
+async def handle_draw_accept(sid, username, room_number, opponent_name):
+    await declare_draw(username, room_number, opponent_name)
+
+    

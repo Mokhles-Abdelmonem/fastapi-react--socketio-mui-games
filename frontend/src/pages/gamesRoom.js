@@ -52,6 +52,8 @@ export default function Game() {
   const [chessBoard, setChessBoard] = useState([Array(9).fill(null)]);
   const [Check, setCheck] = useState(null);
 
+  const [drawRequest, setDrawRequest] = useState(false);
+
 
 
 
@@ -78,13 +80,11 @@ export default function Game() {
     if(highlClicked) {
       const initRowIndex = highlightPiece[0]
       const initIndex = highlightPiece[1]
-      console.log("init Highlight Piece >>>>>>>>>> ",[initRowIndex, initIndex]  )
       socket.emit("submit_piece_move", username, rowIndex, index, initRowIndex, initIndex)
     }
     setHighlightPiece([]);
     setHighlightMoves([]);
     socket.emit("get_available_moves", username, rowIndex, index, piece, (result)=>{
-      console.log("current index >>>>>>>>>> ",rowIndex, index  )
       if (result){
         setHighlightPiece(result.highlightPiece);
         setHighlightMoves(result.available_moves);
@@ -113,6 +113,61 @@ export default function Game() {
   };
 
 
+  function handleDrawRequest() {
+    socket.emit('handle_draw_request', opponentName);
+  }
+
+  function handleDrawAccept() {
+    socket.emit('handle_draw_accept', username, Room,opponentName);
+  }
+
+  function handleDrawDecline() {
+    socket.emit('handle_draw_decline', username);
+    setDrawRequest(false);
+  }
+
+  function DrawButton(request=false){
+    
+    if (request) {
+      return (
+        <Grid
+          container
+        >
+        <Button 
+          color="primary"
+        >
+          {`draw request >>>`}
+        </Button>
+        <Button 
+          variant="contained"
+          color="success"
+          onClick={handleDrawAccept}
+        >
+          accept draw
+        </Button>
+        <Button 
+          variant="contained"
+          color="error"
+          onClick={handleDrawDecline}
+        >
+          decline draw
+        </Button>
+        </Grid>
+      
+      )
+    }else{
+      return(
+        <Button 
+        variant="outlined"
+        color="success"
+        onClick={handleDrawRequest}
+        >
+          request draw 
+        </Button>
+      )}
+    }
+
+    
 
 
 
@@ -193,6 +248,7 @@ export default function Game() {
       setPlayerWon(player.player_won);
       setPlayerLost(player.player_lost);
       setPlayerDraw(player.player_draw);
+      setDrawRequest(player.draw_request);
       setLevel(player.level);
       setRoom(player.room_number);
       setOpponentName(opponent_name);
@@ -257,6 +313,7 @@ export default function Game() {
       setPlayerWon(false);
       setPlayerLost(false);
       setPlayerDraw(false);
+      setDrawRequest(false);
       setBoard([Array(9).fill(null)]);
       setClicked(null);
       setHighlightPiece([]);
@@ -326,6 +383,10 @@ export default function Game() {
     });
 
 
+    socket.on('setDrawRequest', (request) => {
+      setDrawRequest(request);
+    });
+
   }, []);
 
 
@@ -353,17 +414,16 @@ export default function Game() {
     ):('')}
     <Header/>
     <Box  sx={{ width: '100%' }}>
-      <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
-        <Grid item xs={6} md={4}>
+      <Grid container sx={{ width: '100%' }}>
+        <Grid item xs={4} >
           <Chat
           socket={socket}
           level={level}
           />
         </Grid>
-        <Grid item xs={6} md={8}>
-        <Grid container spacing={2}>
-
-        <Grid item xs={16}>
+        <Grid item xs={8} >
+          <Grid container spacing={2}>
+            <Grid item xs={16}>
               <Paper
                 sx={{
                   p: 2,
@@ -379,85 +439,84 @@ export default function Game() {
                   direction="column"
 
                 >
-                {playerWon || playerLost || playerDraw? (    
-                <Button 
-                variant="outlined"
-                color="primary"
-                onClick={handelRemach}
-                >
-                  rematch
-                </Button>
-                ):('')}
-                <Button 
-                variant="outlined"
-                color="error"
-                onClick={leaveAction}
-                >
-                  leave
-                </Button>
+                  {playerWon || playerLost || playerDraw? (    
+                    <Button 
+                    variant="outlined"
+                    color="primary"
+                    onClick={handelRemach}
+                    >
+                      rematch
+                    </Button>
+                  ):(
+                    DrawButton(drawRequest)
+                  )}
+                  <Button 
+                  variant="outlined"
+                  color="error"
+                  onClick={leaveAction}
+                  >
+                    leave
+                  </Button>
                 </Grid>
-            </Paper>
-          </Grid>
-          <Grid item xs={16}>
-            <Grid container spacing={2}>
-
+              </Paper>
+            </Grid>
             <Grid item xs={16}>
-
-                <Paper
-                  sx={{
-                    p: 2,
-                    margin: 'auto',
-                    maxWidth: 500,
-                    flexGrow: 1,
-                  }}
-                  elevation={24}
-                >
-
-                <Container maxWidth="sm">
-
-                  <Box sx={{ bgcolor: '#e3f2fd', minHeight: '10vh' }}>
-                  <Grid
-                    container
-                    spacing={0}
-                    direction="column"
-                    alignItems="center"
-                    justifyContent="center"
+              <Grid container spacing={2}>
+                <Grid item xs={16}>
+                  <Paper
+                    sx={{
+                      p: 2,
+                      margin: 'auto',
+                      maxWidth: 500,
+                      flexGrow: 1,
+                    }}
+                    elevation={24}
                   >
 
-                    <Typography variant="h2" gutterBottom>
-                      {timer ? timer: '--:--'}
-                    </Typography>
-                    
-                  </Grid>
-                  </Box>
-                </Container>
-              </Paper>
+                    <Container maxWidth="sm">
+
+                      <Box sx={{ bgcolor: '#e3f2fd', minHeight: '10vh' }}>
+                        <Grid
+                          container
+                          spacing={0}
+                          direction="column"
+                          alignItems="center"
+                          justifyContent="center"
+                        >
+
+                          <Typography variant="h2" gutterBottom>
+                            {timer ? timer: '--:--'}
+                          </Typography>
+                        </Grid>
+                      </Box>
+                    </Container>
+                  </Paper>
+                </Grid>
+                <Grid item xs={16}>
+                  <Paper
+                    sx={{
+                      p: 2,
+                      margin: 'auto',
+                      minHeight: 500,
+                      maxHeight: 600,
+                      minWidth: 500,
+                      maxWidth: 600,
+                      flexGrow: 1,
+                    }}
+                    elevation={24}
+                  >
+                      <Box sx={{ 
+                        display:"flex" 
+                        }}>
+                        <div className='game'>
+                          {getGameBoard()}
+                        </div>
+                      </Box>
+                  </Paper>
+                </Grid>
               </Grid>
-              <Grid item xs={16}>
-                <Paper
-                  sx={{
-                    p: 2,
-                    margin: 'auto',
-                    maxWidth: 500,
-                    flexGrow: 1,
-                  }}
-                  elevation={24}
-                >
-
-                <Container maxWidth="sm">
-                  <Box sx={{ minHeight: '50vh' }}>
-                    <div className='game'>
-                      {getGameBoard()}
-                    </div>
-                  </Box>
-
-                </Container>
-              </Paper>
-            </Grid>
             </Grid>
           </Grid>
-        </Grid>
-
         </Grid>
       </Grid>
     </Box>
