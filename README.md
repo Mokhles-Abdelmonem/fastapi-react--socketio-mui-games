@@ -12,8 +12,15 @@ To test this project, follow these steps:
 
 2. **Backend Setup:**:
 
+- Navigate to the frontend folder.
+
    ```bash
    cd frontend
+
+
+- create virtual environment.
+
+   ```bash
    python3 -m venv venv
 
 - Linux or MacOS:
