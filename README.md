@@ -1,21 +1,84 @@
-# Socket.io app
+# Socket.io Demo Application
 
-- This application demonstrates how to use Socket.io
-- Built using FastAPI and React
+This application showcases the use of Socket.io, built using FastAPI and React. It includes three games: Chess, TicTacToe, and Rock, Paper, Scissors. The app features login and register pages, a dashboard to select live players and game types, and real-time communication for players through chat. Most of the app functionality is powered by Socket.io connections.
+
+## Getting Started
+
+To test this project, follow these steps:
+
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/Mokhles-Abdelmonem/fastapi-react--socketio-mui-games.git
+
+2. **Backend Setup:**:
+
+   ```bash
+   cd frontend
+   python3 -m venv venv
+
+- Linux or MacOS:
+   
+   ```bash
+   source venv/bin/activate
+
+- Windows:
+   
+   ```bash
+   venv\Scripts\activate
+
+- Install required Python packages:
+
+   ```bash
+   pip install -r requirements.txt
+
+- Run the FastAPI server:
+
+   ```bash
+   python3 main.py
+
+3. **Frontend Setup:**:
+
+- Navigate to the frontend folder.
+
+   ```bash
+   cd frontend
+
+- installation
+   
+   ```bash   
+   npm install
+
+- start server
+   
+   ```bash   
+   npm start
 
 
-In order to test out this project, follow these steps:
+4. **Database Setup:**
 
--   clone the repository
--   in the frontend folder, run: npm install, this will install the required frontend packages
--   in the frontend folder, run: npm start , this will run your react app
--   in the backen folder, run: python3 -m venv venv
--   then activate the virtual environment: source venv/bin/activate (linux or MacOS) or venv\Scripts\activate (Windows)
--   in the backen folder, run: pip install -r requirements.txt
--   in the backen folder, run: python3 main.py
--   install and config mongodb as database and activate it
--   create a new database with name MokhesGame 
--   if you want to change the names feel free to , but don't forget to change it in backen/database.py
--   ui will navigate on port http://localhost:3000/
--   backend end point will navigate on port http://localhost:8000/
--   swagger end point will navigate on port http://localhost:8000/docs
+- Install and configure MongoDB as the database.
+- Create a new database named MokhesGame.
+- (Optional) If you wish to change database names, update it in backend/database.py.
+
+
+5. **Access Points:**
+
+- Frontend UI: http://localhost:3000/
+- Backend API: http://localhost:8000/
+- Swagger Documentation: http://localhost:8000/docs
+
+## Screenshots
+
+![login signup](screenshots/login_signup.png)
+
+![chat](screenshots/chat.png)
+
+![game reguest](screenshots/game_reguest.png)
+
+![confirm request](screenshots/confirm_request.png)
+
+![chess one](screenshots/chess_1.png)
+
+![chess two](screenshots/chess_2.png)
+
+![TicTacToi](screenshots/TicTacToi.png)
